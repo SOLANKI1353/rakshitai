@@ -61,12 +61,12 @@ export function AuthForm({ type }: AuthFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-2xl">
+    <Card className="w-full max-w-md shadow-2xl bg-secondary border-border">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 h-12 w-12 flex items-center justify-center rounded-full bg-primary/10">
+        <div className="mx-auto mb-4 h-14 w-14 flex items-center justify-center rounded-full bg-primary/10">
              <Bot className="h-8 w-8 text-primary" />
         </div>
-        <CardTitle className="text-3xl font-headline">
+        <CardTitle className="text-3xl font-bold">
           {isLogin ? "Welcome Back" : "Create an Account"}
         </CardTitle>
         <CardDescription>
@@ -119,7 +119,7 @@ export function AuthForm({ type }: AuthFormProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full font-bold">
               {isLogin ? "Log In" : "Sign Up"}
             </Button>
           </form>

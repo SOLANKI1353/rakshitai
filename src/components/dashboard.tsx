@@ -46,7 +46,7 @@ export default function Dashboard() {
           <SidebarHeader>
             <div className="flex items-center gap-2">
               <Bot className="size-7 text-primary" />
-              <h1 className="text-xl font-headline font-semibold">RakshitAI</h1>
+              <h1 className="text-xl font-bold">RakshitAI</h1>
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -62,16 +62,16 @@ export default function Dashboard() {
           <SidebarFooter className="mt-auto" />
         </Sidebar>
         <SidebarInset>
-          <header className="flex items-center justify-between p-3 border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10 h-[60px]">
+          <header className="flex items-center justify-between p-3 border-b border-border sticky top-0 bg-background/80 backdrop-blur-sm z-10 h-[60px]">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="md:hidden"/>
-                <h1 className="text-lg font-headline font-semibold md:hidden">RakshitAI</h1>
+                <h1 className="text-lg font-bold md:hidden">RakshitAI</h1>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10 border-2 border-primary/50">
-                        <AvatarFallback>R</AvatarFallback>
+                        <AvatarFallback className="bg-secondary">R</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
