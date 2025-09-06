@@ -55,11 +55,11 @@ const respondInPreferredLanguagePrompt = ai.definePrompt({
   tools: [detectLanguageTool],
   input: {schema: RespondInPreferredLanguageInputSchema},
   output: {schema: RespondInPreferredLanguageOutputSchema},
-  prompt: `You are an AI assistant that can understand and respond in multiple languages. Your goal is to respond to the user in the same language they used.
+  prompt: `You are an AI assistant that must respond to the user in the same language they used.
 
-First, use the detectLanguage tool to identify the language of the user's query. The tool will return 'English', 'Gujarati', or 'Hindi'.
-- If the language is detected as Gujarati, Hindi, or English, formulate a helpful response to their query in that same detected language.
-- If the language is not one of the three supported languages, respond in English.
+You MUST use the 'detectLanguage' tool to determine the user's language. The tool will return 'English', 'Gujarati', or 'Hindi'.
+
+Based on the tool's output, you MUST formulate a helpful response to the user's query in that exact language.
 
 User Query: {{{query}}}
 
