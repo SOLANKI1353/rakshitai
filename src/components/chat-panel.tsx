@@ -15,6 +15,7 @@ import {
   VolumeX,
   Copy,
   Check,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-language";
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
@@ -66,26 +74,63 @@ const CodeBlock = ({ children }: { children: string }) => {
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
+  
+  const canPreview = ['html', 'javascript', 'js', 'css'].includes(language.toLowerCase());
+
+  const getPreviewContent = () => {
+    if (language.toLowerCase() === 'html') {
+      return code;
+    }
+    if (language.toLowerCase() === 'css') {
+      return `<style>${code}</style>`;
+    }
+    if (['javascript', 'js'].includes(language.toLowerCase())) {
+        return `<script>${code}<\/script>`;
+    }
+    return '';
+  }
 
   return (
-    <div className="my-4 rounded-lg border bg-secondary/50 dark:bg-black/20">
-      <div className="flex items-center justify-between rounded-t-lg bg-secondary/80 dark:bg-black/30 px-4 py-2">
-        <span className="text-xs font-semibold text-muted-foreground">{language}</span>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
-          onClick={handleCopy}
-        >
-          {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-        </Button>
+    <Dialog>
+      <div className="my-4 rounded-lg border bg-secondary/50 dark:bg-black/20">
+        <div className="flex items-center justify-between rounded-t-lg bg-secondary/80 dark:bg-black/30 px-4 py-2">
+          <span className="text-xs font-semibold text-muted-foreground">{language}</span>
+          <div className="flex items-center gap-1">
+             {canPreview && (
+                 <DialogTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-7 w-7">
+                        <Eye className="h-4 w-4" />
+                    </Button>
+                 </DialogTrigger>
+             )}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={handleCopy}
+            >
+              {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto">
+          <code ref={codeRef} className={`language-${language}`}>
+            {code}
+          </code>
+        </pre>
       </div>
-      <pre className="p-4 text-sm whitespace-pre-wrap">
-        <code ref={codeRef} className={`language-${language}`}>
-          {code}
-        </code>
-      </pre>
-    </div>
+      <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogHeader>
+            <DialogTitle>Code Preview</DialogTitle>
+        </DialogHeader>
+        <iframe
+            srcDoc={getPreviewContent()}
+            title="Code Preview"
+            sandbox="allow-scripts"
+            className="w-full h-full border rounded-md"
+         />
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -224,32 +269,26 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     }
   };
 
-    const isCodingRequest = (text: string) => {
-        const lowerCaseText = text.toLowerCase();
-        // More specific keywords to avoid false positives
-        const codingKeywords = [
-            'code', 'function', 'javascript', 'python', 'react',
-            'html', 'css', 'algorithm', 'component', 'script',
-            'next.js', 'build', 'how to', 'show me',
-            'fix', 'debug', 'create', 'write', 'implement', 'generate'
-        ];
-        // Check if it's a question about coding concepts
-        const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
-        const isQuestion = questionKeywords.some(kw => lowerCaseText.startsWith(kw));
+  const isCodingRequest = (text: string) => {
+    const lowerCaseText = text.toLowerCase();
+    const codingKeywords = [
+      'code', 'function', 'javascript', 'python', 'react', 'html', 'css', 
+      'algorithm', 'component', 'script', 'next.js', 'build', 'how to', 
+      'show me', 'fix', 'debug', 'create', 'write', 'implement', 'generate',
+      'c#', 'java', 'typescript', 'go', 'json'
+    ];
+    const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
+    
+    // Prioritize file-based flows if a file is present.
+    if (file) {
+      return false;
+    }
 
-        const hasCodingKeyword = codingKeywords.some(keyword => lowerCaseText.includes(keyword));
-
-        if (isQuestion && hasCodingKeyword) {
-            return true;
-        }
-        
-        // Direct command to code, but not a general question
-        if (!isQuestion && hasCodingKeyword) {
-            return true;
-        }
-
-        return false;
-    };
+    const hasCodingKeyword = codingKeywords.some(keyword => lowerCaseText.includes(keyword));
+    const isQuestionAboutCode = questionKeywords.some(kw => lowerCaseText.startsWith(kw)) && hasCodingKeyword;
+    
+    return hasCodingKeyword || isQuestionAboutCode;
+  };
 
 
   const handleSendMessage = async (messageText: string = input) => {
@@ -257,7 +296,6 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     if (!trimmedInput || isLoading) return;
 
     if (file && fileDataUri) {
-        // If there's a file, it must be handled by file submission logic
         await handleFileSubmit();
         return;
     }
@@ -366,7 +404,6 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     try {
       let responseText = "";
       
-      // Determine which file-processing flow to use
       if (finalInstructions.toLowerCase().includes("apk")) {
         const result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
@@ -393,7 +430,6 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
 
       if (isTtsEnabled && responseText) {
-         // We only want to TTS the non-code part of the response
         const textToSpeak = responseText.split('```')[0].trim();
         if(textToSpeak){
             try {
@@ -442,7 +478,6 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     if (isRecording) {
       recognitionRef.current.stop();
     } else {
-      // Update language before starting
       recognitionRef.current.lang = speechLang;
       recognitionRef.current.start();
     }
@@ -585,7 +620,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         >
           <Textarea
             placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-            className="min-h-[60px] rounded-2xl resize-none p-4 pr-36 border-border bg-card shadow-lg"
+            className="min-h-[60px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -601,15 +636,15 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
                 <Label htmlFor="tts-switch" className="sr-only">
                     Toggle TTS
                 </Label>
-                <Switch
+                 <Switch
                     id="tts-switch"
                     checked={isTtsEnabled}
                     onCheckedChange={setIsTtsEnabled}
                     aria-label="Toggle text-to-speech"
-                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
                 />
                  <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
-                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+                    {isTtsEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
                 </Label>
             </div>
             <Button
