@@ -7,8 +7,7 @@ import { Bot } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     // This effect runs only on the client
@@ -16,12 +15,17 @@ export default function Home() {
     if (token) {
       setIsAuthenticated(true);
     } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === false) {
       router.replace("/login");
     }
-    setIsCheckingAuth(false);
-  }, [router]);
+  }, [isAuthenticated, router]);
 
-  if (isCheckingAuth) {
+  if (isAuthenticated === null) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Bot className="h-12 w-12 animate-pulse text-primary" />
@@ -29,11 +33,11 @@ export default function Home() {
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated === true) {
     return <Dashboard />;
   }
 
-  // This will be shown briefly before redirect happens
+  // This will be shown briefly before redirect happens or if auth state is false
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Bot className="h-12 w-12 animate-pulse text-primary" />
