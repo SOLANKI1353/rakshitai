@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
@@ -91,14 +92,7 @@ const CodeBlock = ({ children }: { children: string }) => {
 
 export function ChatPanel({ speechLang }: ChatPanelProps) {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      role: "assistant",
-      content:
-        "Hello! I am RakshitAI. I can answer your questions, write code, analyze files, and even guide you on creating an APK from your web project. How can I help you today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -465,75 +459,75 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   };
 
   const isFileSubmitDisabled = isLoading || !file || !fileInstructions.trim();
+  
+  const showWelcomeMessage = messages.length === 0 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full max-h-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Rakshit.AI</h2>
-        <div className="flex items-center gap-2">
-            <Label htmlFor="tts-switch" className="text-sm text-muted-foreground">
-                {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
-            </Label>
-            <Switch
-                id="tts-switch"
-                checked={isTtsEnabled}
-                onCheckedChange={setIsTtsEnabled}
-                aria-label="Toggle text-to-speech"
-            />
-        </div>
+    <div className="flex flex-col h-full max-h-full p-4 md:p-6 lg:p-8">
+      <div className="flex-1 w-full max-w-4xl mx-auto">
+        {showWelcomeMessage ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Bot className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-2xl md:text-4xl font-bold text-center">How can I help you today?</h1>
+          </div>
+        ) : (
+          <ScrollArea className="h-full mb-4" ref={scrollAreaRef}>
+            <div className="space-y-6 pr-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex items-start gap-3",
+                    message.role === "user" && "justify-end"
+                  )}
+                >
+                  {message.role === "assistant" && (
+                    <Avatar className="w-8 h-8 border-2 border-primary/20">
+                      <AvatarFallback className="bg-primary/10">
+                        <Bot className="w-5 h-5 text-primary" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-3xl rounded-lg px-4 py-3 shadow-md",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card"
+                    )}
+                  >
+                    {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
+                  </div>
+                  {message.role === "user" && (
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        <User className="w-5 h-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex items-start gap-3">
+                  <Avatar className="w-8 h-8 border-2 border-primary/20">
+                    <AvatarFallback className="bg-primary/10">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
       </div>
-      <ScrollArea className="flex-1 mb-4" ref={scrollAreaRef}>
-        <div className="space-y-6 pr-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex items-start gap-3",
-                message.role === "user" && "justify-end"
-              )}
-            >
-              {message.role === "assistant" && (
-                <Avatar className="w-8 h-8 border-2 border-primary/20">
-                  <AvatarFallback className="bg-primary/10">
-                    <Bot className="w-5 h-5 text-primary" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div
-                className={cn(
-                  "max-w-3xl rounded-lg px-4 py-3 shadow-md",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card"
-                )}
-              >
-                {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
-              </div>
-              {message.role === "user" && (
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex items-start gap-3">
-              <Avatar className="w-8 h-8 border-2 border-primary/20">
-                <AvatarFallback className="bg-primary/10">
-                  <Bot className="w-5 h-5 text-primary" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+
       <audio ref={audioRef} className="hidden" />
-      <div className="relative">
+      <div className="relative w-full max-w-4xl mx-auto">
         {file && (
           <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
             <CardContent className="p-4">
@@ -591,7 +585,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         >
           <Textarea
             placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-            className="min-h-[140px] rounded-2xl resize-none p-4 pr-32 border-border bg-card"
+            className="min-h-[60px] rounded-2xl resize-none p-4 pr-32 border-border bg-card shadow-lg"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -602,7 +596,18 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             }}
             disabled={isLoading || isRecording}
           />
-          <div className="absolute top-3 right-3 flex items-center gap-1">
+          <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
+            <div className="flex items-center gap-1 border-r pr-2 mr-1">
+                <Label htmlFor="tts-switch" className="text-sm text-muted-foreground cursor-pointer">
+                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+                </Label>
+                <Switch
+                    id="tts-switch"
+                    checked={isTtsEnabled}
+                    onCheckedChange={setIsTtsEnabled}
+                    aria-label="Toggle text-to-speech"
+                />
+            </div>
             <Button
               type="button"
               size="icon"
