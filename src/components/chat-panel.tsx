@@ -144,9 +144,14 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     if (!trimmedInput || isLoading) return;
 
     if (file && fileDataUri) {
-      await handleFileSubmit(trimmedInput);
-      return;
+        if (fileInstructions.trim()) {
+            await handleFileSubmit(fileInstructions);
+        } else {
+            await handleFileSubmit(trimmedInput);
+        }
+        return;
     }
+
 
     setIsLoading(true);
 
@@ -160,20 +165,10 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
     try {
       let result;
-      const isCodingRequest =
-        trimmedInput.toLowerCase().includes("code") ||
-        trimmedInput.toLowerCase().includes("write") ||
-        trimmedInput.toLowerCase().includes("create") ||
-        trimmedInput.toLowerCase().includes("build") ||
-        trimmedInput.toLowerCase().includes("make");
-
-      if (isCodingRequest) {
-        const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
-        result = { response: gptResult.generatedText };
-      } else {
-        const langResult = await respondInPreferredLanguage({ query: trimmedInput });
-        result = { response: langResult.response, action: langResult.action };
-      }
+      // For any request that isn't clearly a file submission,
+      // we'll assume it might be a coding request and use the powerful model.
+      const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
+      result = { response: gptResult.generatedText };
       
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -509,3 +504,5 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     </div>
   );
 }
+
+    
