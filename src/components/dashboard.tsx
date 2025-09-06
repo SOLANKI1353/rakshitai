@@ -124,7 +124,7 @@ export default function Dashboard() {
                 </DropdownMenu>
               </div>
           </header>
-          <main className="h-[calc(100vh-60px)] overflow-y-auto p-4 md:p-6 lg:p-8">
+          <main className="h-[calc(100svh-60px)] overflow-y-auto p-4 md:p-6 lg:p-8">
               <ChatPanel speechLang={speechLang} />
           </main>
         </SidebarInset>
@@ -132,5 +132,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    

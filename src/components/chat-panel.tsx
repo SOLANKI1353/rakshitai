@@ -234,21 +234,27 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         const lowerCaseText = text.toLowerCase();
         // More specific keywords to avoid false positives
         const codingKeywords = [
-            'write code', 'create a function', 'javascript', 'python', 'react component',
-            'html', 'css', 'algorithm', 'data structure', 'api endpoint',
-            'next.js', 'build a component', 'how to code', 'show me the code',
-            'fix this code', 'debug this'
+            'code', 'function', 'javascript', 'python', 'react',
+            'html', 'css', 'algorithm', 'component',
+            'next.js', 'build', 'how to', 'show me',
+            'fix', 'debug', 'create', 'write'
         ];
         // Check if it's a question about coding concepts
         const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
         const isQuestion = questionKeywords.some(kw => lowerCaseText.startsWith(kw));
 
-        if (isQuestion && codingKeywords.some(keyword => lowerCaseText.includes(keyword))) {
+        const hasCodingKeyword = codingKeywords.some(keyword => lowerCaseText.includes(keyword));
+
+        if (isQuestion && hasCodingKeyword) {
+            return true;
+        }
+        
+        // Direct command to code, but not a general question
+        if (!isQuestion && hasCodingKeyword) {
             return true;
         }
 
-        // Check if it's a direct command to code
-        return codingKeywords.some(keyword => lowerCaseText.includes(keyword) && !isQuestion);
+        return false;
     };
 
 
@@ -461,9 +467,9 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   const isFileSubmitDisabled = isLoading || !file || !fileInstructions.trim();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Chat</h2>
+        <h2 className="text-2xl font-bold">Rakshit.AI</h2>
         <div className="flex items-center gap-2">
             <Label htmlFor="tts-switch" className="text-sm text-muted-foreground">
                 {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
