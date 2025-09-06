@@ -140,7 +140,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   };
 
     const isCodingRequest = (text: string) => {
-        const codingKeywords = ['code', 'coding', 'programming', 'develop', 'build', 'create', 'app', 'website', 'script', 'html', 'css', 'javascript', 'python', 'java', 'c++', 'react', 'next.js', 'component'];
+        const codingKeywords = ['code', 'coding', 'programming', 'develop', 'build', 'create', 'app', 'website', 'script', 'html', 'css', 'javascript', 'python', 'java', 'c++', 'react', 'next.js', 'component', 'algorithm', 'function', 'class'];
         const lowerCaseText = text.toLowerCase();
         return codingKeywords.some(keyword => lowerCaseText.includes(keyword));
     };
@@ -154,7 +154,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         if (fileInstructions.trim()) {
             await handleFileSubmit(fileInstructions);
         } else {
-            await handleFileSubmit(trimmedInput);
+            toast({
+                variant: "destructive",
+                title: "Instructions required",
+                description: "Please provide instructions for the uploaded file.",
+            });
         }
         return;
     }
@@ -172,30 +176,33 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
     try {
       let result;
+      let responseText = "";
+
       // Check if the prompt is likely a coding request
       if (isCodingRequest(trimmedInput)) {
           const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
-          result = { response: gptResult.generatedText };
+          responseText = gptResult.generatedText;
       } else {
           result = await respondInPreferredLanguage({ query: trimmedInput });
+          responseText = result.response;
+          if ((result as any).action) {
+            if ((result as any).action.type === "open_url" && (result as any).action.url) {
+              window.open((result as any).action.url, "_blank");
+            }
+          }
       }
       
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
-        content: result.response,
+        content: responseText,
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      if ((result as any).action) {
-        if ((result as any).action.type === "open_url" && (result as any).action.url) {
-          window.open((result as any).action.url, "_blank");
-        }
-      }
 
       if (isTtsEnabled) {
         try {
-          const audioResult = await textToSpeech(result.response);
+          const audioResult = await textToSpeech(responseText);
           if (audioRef.current) {
             audioRef.current.src = audioResult.media;
             audioRef.current.play();
@@ -249,20 +256,17 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
     try {
       let result;
+      let responseText = "";
       // Check if the user is asking to build an APK
       if (finalInstructions.toLowerCase().includes("apk")) {
         result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
           instructions: finalInstructions,
         });
-        const assistantMessage: Message = {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: result.isPossible
+        responseText = result.isPossible
             ? result.guidance
-            : `Sorry, I can't convert this project. ${result.guidance}`,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
+            : `Sorry, I can't convert this project. ${result.guidance}`;
+
       } else {
         // Use the general file analyzer
         result = await analyzeUploadedFile({
@@ -270,15 +274,15 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
           fileType: currentFile.type,
           instructions: finalInstructions,
         });
-         const assistantMessage: Message = {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: result.analysisResult,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
+        responseText = result.analysisResult;
       }
+       const assistantMessage: Message = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: responseText,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
 
-      const responseText = (result as any).guidance || (result as any).analysisResult;
 
       if (isTtsEnabled && responseText) {
         try {
@@ -514,5 +518,3 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     </div>
   );
 }
-
-    
