@@ -10,6 +10,8 @@ import {
   Send,
   User,
   X,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-language";
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
@@ -59,7 +62,7 @@ export function ChatPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-
+  const [isTtsEnabled, setIsTtsEnabled] = useState(false);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -70,13 +73,14 @@ export function ChatPanel() {
     }
   }, [messages]);
 
-   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'en-US'; // Default language
+      recognition.lang = "en-US"; // Default language
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -91,9 +95,9 @@ export function ChatPanel() {
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error", event.error);
         toast({
-            variant: "destructive",
-            title: "Speech Recognition Error",
-            description: `An error occurred: ${event.error}`,
+          variant: "destructive",
+          title: "Speech Recognition Error",
+          description: `An error occurred: ${event.error}`,
         });
         setIsRecording(false);
       };
@@ -104,7 +108,7 @@ export function ChatPanel() {
 
       recognitionRef.current = recognition;
     } else {
-        console.warn("Speech Recognition not supported in this browser.");
+      console.warn("Speech Recognition not supported in this browser.");
     }
   }, [toast]);
 
@@ -153,18 +157,30 @@ export function ChatPanel() {
 
       // Handle actions returned by the AI
       if (result.action) {
-        if (result.action.type === 'open_url' && result.action.url) {
-          window.open(result.action.url, '_blank');
+        if (result.action.type === "open_url" && result.action.url) {
+          window.open(result.action.url, "_blank");
         }
       }
 
-      // Generate and play audio
-      const audioResult = await textToSpeech(result.response);
-      if (audioRef.current) {
-        audioRef.current.src = audioResult.media;
-        audioRef.current.play();
+      if (isTtsEnabled) {
+        try {
+          const audioResult = await textToSpeech(result.response);
+          if (audioRef.current) {
+            audioRef.current.src = audioResult.media;
+            audioRef.current.play();
+          }
+        } catch (ttsError: any) {
+          console.error("TTS Error:", ttsError);
+          const description = ttsError.message.includes("429")
+            ? "You've exceeded the daily limit for audio responses."
+            : "Could not generate audio response.";
+          toast({
+            variant: "destructive",
+            title: "Text-to-Speech Failed",
+            description: description,
+          });
+        }
       }
-
     } catch (error) {
       console.error("Error with AI response:", error);
       const errorMessage: Message = {
@@ -189,11 +205,11 @@ export function ChatPanel() {
       content: userMessageContent,
     };
     setMessages((prev) => [...prev, newUserMessage]);
-    
+
     setFile(null);
     setFileDataUri(null);
     setFileInstructions("");
-    if(fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
       const result = await analyzeUploadedFile({
@@ -208,13 +224,25 @@ export function ChatPanel() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Generate and play audio
-      const audioResult = await textToSpeech(result.analysisResult);
-      if (audioRef.current) {
-        audioRef.current.src = audioResult.media;
-        audioRef.current.play();
+      if (isTtsEnabled) {
+        try {
+          const audioResult = await textToSpeech(result.analysisResult);
+          if (audioRef.current) {
+            audioRef.current.src = audioResult.media;
+            audioRef.current.play();
+          }
+        } catch (ttsError: any) {
+          console.error("TTS Error:", ttsError);
+          const description = ttsError.message.includes("429")
+            ? "You've exceeded the daily limit for audio responses."
+            : "Could not generate audio response.";
+          toast({
+            variant: "destructive",
+            title: "Text-to-Speech Failed",
+            description: description,
+          });
+        }
       }
-
     } catch (error) {
       console.error("Error analyzing file:", error);
       const errorMessage: Message = {
@@ -231,12 +259,12 @@ export function ChatPanel() {
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
-         toast({
-            variant: "destructive",
-            title: "Browser Not Supported",
-            description: "Speech recognition is not supported in your browser.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "Browser Not Supported",
+        description: "Speech recognition is not supported in your browser.",
+      });
+      return;
     }
     if (isRecording) {
       recognitionRef.current.stop();
@@ -247,7 +275,20 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-2xl font-headline mb-4">Chat</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-headline">Chat</h2>
+        <div className="flex items-center gap-2">
+            <Label htmlFor="tts-switch" className="text-sm text-muted-foreground">
+                {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+            </Label>
+            <Switch
+                id="tts-switch"
+                checked={isTtsEnabled}
+                onCheckedChange={setIsTtsEnabled}
+                aria-label="Toggle text-to-speech"
+            />
+        </div>
+      </div>
       <ScrollArea className="flex-1 mb-4" ref={scrollAreaRef}>
         <div className="space-y-6 pr-4">
           {messages.map((message) => (
@@ -285,26 +326,28 @@ export function ChatPanel() {
             </div>
           ))}
           {isLoading && (
-             <div className="flex items-start gap-3">
-                <Avatar className="w-8 h-8 border-2 border-primary">
-                  <AvatarFallback>
-                    <Bot className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                </div>
+            <div className="flex items-start gap-3">
+              <Avatar className="w-8 h-8 border-2 border-primary">
+                <AvatarFallback>
+                  <Bot className="w-5 h-5" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
             </div>
           )}
         </div>
       </ScrollArea>
-       <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" />
       <div className="relative">
         {file && (
           <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95">
             <CardContent className="p-4">
               <div className="flex justify-between items-center mb-2">
-                <p className="text-sm font-medium">Analyzing File: {file.name}</p>
+                <p className="text-sm font-medium">
+                  Analyzing File: {file.name}
+                </p>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -312,7 +355,7 @@ export function ChatPanel() {
                   onClick={() => {
                     setFile(null);
                     setFileDataUri(null);
-                    if(fileInputRef.current) fileInputRef.current.value = "";
+                    if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                 >
                   <X className="h-4 w-4" />
@@ -320,7 +363,9 @@ export function ChatPanel() {
               </div>
               <div className="space-y-2">
                 <div>
-                  <Label htmlFor="instructions" className="text-xs">Instructions</Label>
+                  <Label htmlFor="instructions" className="text-xs">
+                    Instructions
+                  </Label>
                   <Input
                     id="instructions"
                     placeholder="e.g., 'Summarize the contents of this zip file'"
@@ -345,11 +390,11 @@ export function ChatPanel() {
           </Card>
         )}
         <form
-            className="relative"
-            onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-            }}
+          className="relative"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
         >
           <Textarea
             placeholder="Ask me anything or attach a file..."
@@ -391,7 +436,12 @@ export function ChatPanel() {
               onChange={handleFileChange}
               className="hidden"
             />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()} aria-label="Send message">
+            <Button
+              type="submit"
+              size="icon"
+              disabled={isLoading || !input.trim()}
+              aria-label="Send message"
+            >
               <Send className="h-5 w-5" />
             </Button>
           </div>
@@ -400,3 +450,5 @@ export function ChatPanel() {
     </div>
   );
 }
+
+    
