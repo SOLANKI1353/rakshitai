@@ -25,6 +25,7 @@ import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-lang
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
+import { generateTextWithChatGPT } from "@/ai/flows/generate-text-with-chat-gpt";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -142,9 +143,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     const trimmedInput = messageText.trim();
     if (!trimmedInput || isLoading) return;
 
-    // If a file is attached, use the file submission logic instead.
     if (file && fileDataUri) {
-      // If there are instructions in the input, use them for the file submission.
       await handleFileSubmit(trimmedInput);
       return;
     }
@@ -160,7 +159,22 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     setInput("");
 
     try {
-      const result = await respondInPreferredLanguage({ query: trimmedInput });
+      let result;
+      const isCodingRequest =
+        trimmedInput.toLowerCase().includes("code") ||
+        trimmedInput.toLowerCase().includes("write") ||
+        trimmedInput.toLowerCase().includes("create") ||
+        trimmedInput.toLowerCase().includes("build") ||
+        trimmedInput.toLowerCase().includes("make");
+
+      if (isCodingRequest) {
+        const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
+        result = { response: gptResult.generatedText };
+      } else {
+        const langResult = await respondInPreferredLanguage({ query: trimmedInput });
+        result = { response: langResult.response, action: langResult.action };
+      }
+      
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
@@ -168,10 +182,9 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Handle actions returned by the AI
-      if (result.action) {
-        if (result.action.type === "open_url" && result.action.url) {
-          window.open(result.action.url, "_blank");
+      if ((result as any).action) {
+        if ((result as any).action.type === "open_url" && (result as any).action.url) {
+          window.open((result as any).action.url, "_blank");
         }
       }
 
