@@ -43,8 +43,8 @@ const detectLanguageTool = ai.defineTool(
     
     const detectedLanguage = output as string;
 
-    if (detectedLanguage.toLowerCase().includes('hindi')) return 'Hindi';
-    if (detectedLanguage.toLowerCase().includes('gujarati')) return 'Gujarati';
+    if (detectedLanguage && detectedLanguage.toLowerCase().includes('hindi')) return 'Hindi';
+    if (detectedLanguage && detectedLanguage.toLowerCase().includes('gujarati')) return 'Gujarati';
     return 'English';
   }
 );
