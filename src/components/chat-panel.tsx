@@ -151,6 +151,13 @@ export function ChatPanel() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Handle actions returned by the AI
+      if (result.action) {
+        if (result.action.type === 'open_url' && result.action.url) {
+          window.open(result.action.url, '_blank');
+        }
+      }
+
       // Generate and play audio
       const audioResult = await textToSpeech(result.response);
       if (audioRef.current) {

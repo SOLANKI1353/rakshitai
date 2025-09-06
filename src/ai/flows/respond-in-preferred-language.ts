@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that detects the language of the user's input and responds in the same language.
+ * @fileOverview An AI agent that detects the language of the user's input and responds in the same language. It can also perform actions like opening URLs.
  *
  * - respondInPreferredLanguage - A function that detects the language and responds.
  * - RespondInPreferredLanguageInput - The input type for the respondInPreferredLanguage function.
@@ -17,7 +17,18 @@ const RespondInPreferredLanguageInputSchema = z.object({
 export type RespondInPreferredLanguageInput = z.infer<typeof RespondInPreferredLanguageInputSchema>;
 
 const RespondInPreferredLanguageOutputSchema = z.object({
-  response: z.string().describe('The AI response in the detected language.'),
+  response: z
+    .string()
+    .describe('The AI response in the detected language.'),
+  action: z
+    .object({
+      type: z
+        .string()
+        .describe("The type of action to perform, e.g., 'open_url'."),
+      url: z.string().url().describe('The URL to open for the action.'),
+    })
+    .optional()
+    .describe('An action for the client to perform, like opening a URL.'),
 });
 export type RespondInPreferredLanguageOutput = z.infer<typeof RespondInPreferredLanguageOutputSchema>;
 
@@ -55,15 +66,17 @@ const respondInPreferredLanguagePrompt = ai.definePrompt({
   tools: [detectLanguageTool],
   input: {schema: RespondInPreferredLanguageInputSchema},
   output: {schema: RespondInPreferredLanguageOutputSchema},
-  prompt: `You are an AI assistant that must respond to the user in the same language they used.
+  prompt: `You are an AI assistant named RakshitAI. You must respond to the user in the same language they used.
 
 You MUST use the 'detectLanguage' tool to determine the user's language. The tool will return 'English', 'Gujarati', or 'Hindi'.
 
 Based on the tool's output, you MUST formulate a helpful response to the user's query in that exact language.
 
+If the user asks to open a website or app (like YouTube, Google, etc.), you should identify the URL and include it in the 'action' part of your response. For example, if the user says "Open YouTube", your action should be to open 'https://www.youtube.com'. If the user says "Open Google", your action should be to open 'https://www.google.com'. Your response text should confirm the action, e.g., "Opening YouTube."
+
 User Query: {{{query}}}
 
-Your final output must be a JSON object with a single key "response" containing your answer in the correct language.`, 
+Your final output must be a JSON object with a "response" key containing your answer, and an optional "action" key if a URL needs to be opened.`, 
 });
 
 const respondInPreferredLanguageFlow = ai.defineFlow(
