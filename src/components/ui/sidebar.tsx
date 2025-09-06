@@ -323,7 +323,17 @@ const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         "relative flex min-h-svh flex-1 flex-col bg-background",
+        "md:peer-data-[state=expanded]:ml-[--sidebar-width]",
+        "md:peer-data-[state=collapsed]:peer-data-[collapsible=offcanvas]:ml-0",
+        "md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:ml-[--sidebar-width-icon]",
+        "md:peer-data-[variant=floating]:peer-data-[state=expanded]:ml-0",
+        "md:peer-data-[variant=floating]:peer-data-[state=collapsed]:ml-0",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
+        "md:peer-data-[side=right]:peer-data-[state=expanded]:mr-[--sidebar-width]",
+        "md:peer-data-[side=right]:peer-data-[state=collapsed]:peer-data-[collapsible=offcanvas]:mr-0",
+        "md:peer-data-[side=right]:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:mr-[--sidebar-width-icon]",
+        "md:peer-data-[variant=floating]:peer-data-[side=right]:peer-data-[state=expanded]:mr-0",
+        "md:peer-data-[variant=floating]:peer-data-[side=right]:peer-data-[state=collapsed]:mr-0",
         className
       )}
       {...props}
