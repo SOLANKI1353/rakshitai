@@ -12,6 +12,8 @@ import {
   X,
   Volume2,
   VolumeX,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +49,46 @@ type ChatPanelProps = {
     speechLang: string;
 }
 
+const CodeBlock = ({ children }: { children: string }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
+
+  // Simple regex to find language, e.g., ```javascript
+  const langMatch = children.match(/^```(\w+)\n/);
+  const language = langMatch ? langMatch[1] : 'code';
+  const code = children.replace(/^```\w+\n/, '').replace(/```$/, '');
+
+  const handleCopy = () => {
+    if (codeRef.current) {
+      navigator.clipboard.writeText(code);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="my-4 rounded-lg border bg-secondary/50 dark:bg-black/20">
+      <div className="flex items-center justify-between rounded-t-lg bg-secondary/80 dark:bg-black/30 px-4 py-2">
+        <span className="text-xs font-semibold text-muted-foreground">{language}</span>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={handleCopy}
+        >
+          {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+        </Button>
+      </div>
+      <pre className="overflow-x-auto p-4 text-sm">
+        <code ref={codeRef} className={`language-${language}`}>
+          {code}
+        </code>
+      </pre>
+    </div>
+  );
+};
+
+
 export function ChatPanel({ speechLang }: ChatPanelProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
@@ -78,6 +120,55 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
       });
     }
   }, [messages]);
+  
+  // Dynamically load prism.js for syntax highlighting
+  useEffect(() => {
+    const loadPrism = async () => {
+      // @ts-ignore
+      if (typeof window.Prism === 'undefined') {
+        try {
+          await import('prismjs/themes/prism-tomorrow.css');
+          // @ts-ignore
+          await import('prismjs');
+          // @ts-ignore
+          await import('prismjs/components/prism-javascript');
+          // @ts-ignore
+          await import('prismjs/components/prism-typescript');
+          // @ts-ignore
+          await import('prismjs/components/prism-jsx');
+           // @ts-ignore
+          await import('prismjs/components/prism-tsx');
+          // @ts-ignore
+          await import('prismjs/components/prism-css');
+           // @ts-ignore
+          await import('prismjs/components/prism-python');
+           // @ts-ignore
+          await import('prismjs/components/prism-java');
+           // @ts-ignore
+          await import('prismjs/components/prism-csharp');
+           // @ts-ignore
+          await import('prismjs/components/prism-go');
+           // @ts-ignore
+          await import('prismjs/components/prism-json');
+           // @ts-ignore
+          await import('prismjs/components/prism-bash');
+        } catch (e) {
+            console.error("Failed to load prismjs", e);
+        }
+      }
+    };
+    loadPrism();
+  }, []);
+
+
+  useEffect(() => {
+    // @ts-ignore
+    if (typeof window.Prism !== 'undefined') {
+        // @ts-ignore
+        window.Prism.highlightAll();
+    }
+  }, [messages, isLoading]);
+
 
   useEffect(() => {
     const SpeechRecognition =
@@ -140,9 +231,24 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   };
 
     const isCodingRequest = (text: string) => {
-        const codingKeywords = ['code', 'coding', 'programming', 'develop', 'build', 'create', 'app', 'website', 'script', 'html', 'css', 'javascript', 'python', 'java', 'c++', 'react', 'next.js', 'component', 'algorithm', 'function', 'class'];
         const lowerCaseText = text.toLowerCase();
-        return codingKeywords.some(keyword => lowerCaseText.includes(keyword));
+        // More specific keywords to avoid false positives
+        const codingKeywords = [
+            'write code', 'create a function', 'javascript', 'python', 'react component',
+            'html', 'css', 'algorithm', 'data structure', 'api endpoint',
+            'next.js', 'build a component', 'how to code', 'show me the code',
+            'fix this code', 'debug this'
+        ];
+        // Check if it's a question about coding concepts
+        const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
+        const isQuestion = questionKeywords.some(kw => lowerCaseText.startsWith(kw));
+
+        if (isQuestion && codingKeywords.some(keyword => lowerCaseText.includes(keyword))) {
+            return true;
+        }
+
+        // Check if it's a direct command to code
+        return codingKeywords.some(keyword => lowerCaseText.includes(keyword) && !isQuestion);
     };
 
 
@@ -151,15 +257,8 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     if (!trimmedInput || isLoading) return;
 
     if (file && fileDataUri) {
-        if (fileInstructions.trim()) {
-            await handleFileSubmit(fileInstructions);
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Instructions required",
-                description: "Please provide instructions for the uploaded file.",
-            });
-        }
+        // If there's a file, it must be handled by file submission logic
+        await handleFileSubmit();
         return;
     }
 
@@ -175,21 +274,18 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     setInput("");
 
     try {
-      let result;
       let responseText = "";
-
-      // Check if the prompt is likely a coding request
+      
+      // Determine which flow to use
       if (isCodingRequest(trimmedInput)) {
-          const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
-          responseText = gptResult.generatedText;
+        const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
+        responseText = gptResult.generatedText;
       } else {
-          result = await respondInPreferredLanguage({ query: trimmedInput });
-          responseText = result.response;
-          if ((result as any).action) {
-            if ((result as any).action.type === "open_url" && (result as any).action.url) {
-              window.open((result as any).action.url, "_blank");
-            }
-          }
+        const result = await respondInPreferredLanguage({ query: trimmedInput });
+        responseText = result.response;
+        if ((result as any).action && (result as any).action.type === "open_url" && (result as any).action.url) {
+            window.open((result as any).action.url, "_blank");
+        }
       }
       
       const assistantMessage: Message = {
@@ -201,22 +297,26 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
 
       if (isTtsEnabled) {
-        try {
-          const audioResult = await textToSpeech(responseText);
-          if (audioRef.current) {
-            audioRef.current.src = audioResult.media;
-            audioRef.current.play();
-          }
-        } catch (ttsError: any) {
-          console.error("TTS Error:", ttsError);
-          const description = ttsError.message.includes("429")
-            ? "You've exceeded the daily limit for audio responses."
-            : "Could not generate audio response.";
-          toast({
-            variant: "destructive",
-            title: "Text-to-Speech Failed",
-            description: description,
-          });
+        // We only want to TTS the non-code part of the response
+        const textToSpeak = responseText.split('```')[0].trim();
+        if (textToSpeak) {
+            try {
+              const audioResult = await textToSpeech(textToSpeak);
+              if (audioRef.current) {
+                audioRef.current.src = audioResult.media;
+                audioRef.current.play();
+              }
+            } catch (ttsError: any) {
+              console.error("TTS Error:", ttsError);
+              const description = ttsError.message.includes("429")
+                ? "You've exceeded the daily limit for audio responses."
+                : "Could not generate audio response.";
+              toast({
+                variant: "destructive",
+                title: "Text-to-Speech Failed",
+                description: description,
+              });
+            }
         }
       }
     } catch (error) {
@@ -234,7 +334,16 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
   const handleFileSubmit = async (instructions?: string) => {
     const finalInstructions = instructions || fileInstructions;
-    if (!file || !fileDataUri || !finalInstructions.trim() || isLoading) return;
+    if (!file || !fileDataUri || !finalInstructions.trim() || isLoading) {
+         if(!finalInstructions.trim()){
+            toast({
+                variant: "destructive",
+                title: "Instructions Required",
+                description: "Please provide instructions for the uploaded file.",
+            });
+         }
+        return;
+    }
     setIsLoading(true);
 
     const userMessageContent = `File: ${file.name}.\nInstructions: ${finalInstructions}`;
@@ -255,11 +364,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
-      let result;
       let responseText = "";
-      // Check if the user is asking to build an APK
+      
+      // Determine which file-processing flow to use
       if (finalInstructions.toLowerCase().includes("apk")) {
-        result = await apkBuilderAgent({
+        const result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
           instructions: finalInstructions,
         });
@@ -268,8 +377,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             : `Sorry, I can't convert this project. ${result.guidance}`;
 
       } else {
-        // Use the general file analyzer
-        result = await analyzeUploadedFile({
+        const result = await analyzeUploadedFile({
           fileDataUri: currentFileDataUri,
           fileType: currentFile.type,
           instructions: finalInstructions,
@@ -285,24 +393,28 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
 
       if (isTtsEnabled && responseText) {
-        try {
-          const audioResult = await textToSpeech(responseText);
-          if (audioRef.current) {
-            audioRef.current.src = audioResult.media;
-            audioRef.current.play();
-          }
-        } catch (ttsError: any)          {
-            console.error('TTS Error:', ttsError);
-            const description =
-              (ttsError as Error).message.includes('429') ?
-              "You've exceeded the daily limit for audio responses." :
-              'Could not generate audio response.';
-            toast({
-              variant: 'destructive',
-              title: 'Text-to-Speech Failed',
-              description: description,
-            });
-          }
+         // We only want to TTS the non-code part of the response
+        const textToSpeak = responseText.split('```')[0].trim();
+        if(textToSpeak){
+            try {
+              const audioResult = await textToSpeech(textToSpeak);
+              if (audioRef.current) {
+                audioRef.current.src = audioResult.media;
+                audioRef.current.play();
+              }
+            } catch (ttsError: any)          {
+                console.error('TTS Error:', ttsError);
+                const description =
+                  (ttsError as Error).message.includes('429') ?
+                  "You've exceeded the daily limit for audio responses." :
+                  'Could not generate audio response.';
+                toast({
+                  variant: 'destructive',
+                  title: 'Text-to-Speech Failed',
+                  description: description,
+                });
+            }
+        }
       }
     } catch (error) {
       console.error("Error processing file:", error);
@@ -334,6 +446,16 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
       recognitionRef.current.lang = speechLang;
       recognitionRef.current.start();
     }
+  };
+  
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(```[\s\S]*?```)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('```')) {
+        return <CodeBlock key={index}>{part}</CodeBlock>;
+      }
+      return <p key={index} className="text-sm whitespace-pre-wrap">{part}</p>;
+    });
   };
 
   const isFileSubmitDisabled = isLoading || !file || !fileInstructions.trim();
@@ -373,13 +495,13 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
               )}
               <div
                 className={cn(
-                  "max-w-xl rounded-lg px-4 py-3 shadow-md",
+                  "max-w-3xl rounded-lg px-4 py-3 shadow-md",
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-card"
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
               </div>
               {message.role === "user" && (
                 <Avatar className="w-8 h-8">
@@ -506,7 +628,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             <Button
               type="submit"
               size="icon"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() && !file}
               aria-label="Send message"
               className="h-8 w-8"
             >
