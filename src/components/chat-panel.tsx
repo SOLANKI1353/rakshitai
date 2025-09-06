@@ -132,6 +132,38 @@ const CodeBlock = ({ children }: { children: string }) => {
   );
 };
 
+const renderMessageContent = (content: string) => {
+  const codeBlockRegex = /(```[\s\S]*?```)/g;
+  const inlineCodeRegex = /(`[^`]+`)/g;
+
+  const parts = content.split(codeBlockRegex).filter(Boolean);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('```')) {
+      return <CodeBlock key={index}>{part}</CodeBlock>;
+    }
+    
+    const inlineParts = part.split(inlineCodeRegex).filter(Boolean);
+    return (
+        <p key={index} className="text-sm whitespace-pre-wrap">
+        {inlineParts.map((inlinePart, inlineIndex) => {
+            if (inlinePart.startsWith('`')) {
+            return (
+                <code
+                key={inlineIndex}
+                className="mx-1 rounded bg-secondary px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-secondary-foreground"
+                >
+                {inlinePart.slice(1, -1)}
+                </code>
+            );
+            }
+            return inlinePart;
+        })}
+        </p>
+    );
+  });
+};
+
 
 export function ChatPanel({ speechLang }: ChatPanelProps) {
   const { toast } = useToast();
@@ -484,16 +516,6 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     }
   };
   
-  const renderMessageContent = (content: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/g).filter(Boolean);
-    return parts.map((part, index) => {
-      if (part.startsWith('```')) {
-        return <CodeBlock key={index}>{part}</CodeBlock>;
-      }
-      return <p key={index} className="text-sm whitespace-pre-wrap">{part}</p>;
-    });
-  };
-
   const isFileSubmitDisabled = isLoading || !file || !(fileInstructions.trim() || input.trim());
   
   const showWelcomeMessage = messages.length === 0 && !isLoading;
@@ -702,5 +724,3 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     </div>
   );
 }
-
-    
