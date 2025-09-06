@@ -27,19 +27,28 @@ export async function respondInPreferredLanguage(
   return respondInPreferredLanguageFlow(input);
 }
 
-const detectLanguageTool = ai.defineTool({
-  name: 'detectLanguage',
-  description: 'Detects the language of the input text.',
-  inputSchema: z.object({
-    text: z.string().describe('The text to detect the language of.'),
-  }),
-  outputSchema: z.string().describe('The detected language of the text.'),
-}, async (input) => {
-  // This is a placeholder implementation. Replace with actual language detection logic.
-  // For example, you can use the Google Translate API or a similar service.
-  // For now, let's assume it always detects English.
-  return 'English';
-});
+const detectLanguageTool = ai.defineTool(
+  {
+    name: 'detectLanguage',
+    description: 'Detects the language of the input text from the available languages: English, Gujarati, and Hindi.',
+    inputSchema: z.object({
+      text: z.string().describe('The text to detect the language of.'),
+    }),
+    outputSchema: z.string().describe('The detected language of the text.'),
+  },
+  async (input) => {
+    const { output } = await ai.generate({
+      prompt: `Detect the language of the following text. The possible languages are English, Gujarati, and Hindi. Respond with only the name of the language. Text: "${input.text}"`,
+    });
+    
+    const detectedLanguage = output as string;
+
+    if (detectedLanguage.toLowerCase().includes('hindi')) return 'Hindi';
+    if (detectedLanguage.toLowerCase().includes('gujarati')) return 'Gujarati';
+    return 'English';
+  }
+);
+
 
 const respondInPreferredLanguagePrompt = ai.definePrompt({
   name: 'respondInPreferredLanguagePrompt',
