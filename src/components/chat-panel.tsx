@@ -141,6 +141,14 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   const handleSendMessage = async (messageText: string = input) => {
     const trimmedInput = messageText.trim();
     if (!trimmedInput || isLoading) return;
+
+    // If a file is attached, use the file submission logic instead.
+    if (file && fileDataUri) {
+      // If there are instructions in the input, use them for the file submission.
+      await handleFileSubmit(trimmedInput);
+      return;
+    }
+
     setIsLoading(true);
 
     const newUserMessage: Message = {
@@ -199,11 +207,12 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     }
   };
 
-  const handleFileSubmit = async () => {
-    if (!file || !fileDataUri || !fileInstructions.trim() || isLoading) return;
+  const handleFileSubmit = async (instructions?: string) => {
+    const finalInstructions = instructions || fileInstructions;
+    if (!file || !fileDataUri || !finalInstructions.trim() || isLoading) return;
     setIsLoading(true);
 
-    const userMessageContent = `File: ${file.name}.\nInstructions: ${fileInstructions}`;
+    const userMessageContent = `File: ${file.name}.\nInstructions: ${finalInstructions}`;
     const newUserMessage: Message = {
       id: Date.now(),
       role: "user",
@@ -214,19 +223,19 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     // Reset file state
     const currentFile = file;
     const currentFileDataUri = fileDataUri;
-    const currentFileInstructions = fileInstructions;
     setFile(null);
     setFileDataUri(null);
     setFileInstructions("");
+    setInput(""); // Also clear the main input
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
       let result;
       // Check if the user is asking to build an APK
-      if (currentFileInstructions.toLowerCase().includes("apk")) {
+      if (finalInstructions.toLowerCase().includes("apk")) {
         result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
-          instructions: currentFileInstructions,
+          instructions: finalInstructions,
         });
         const assistantMessage: Message = {
           id: Date.now() + 1,
@@ -241,7 +250,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         result = await analyzeUploadedFile({
           fileDataUri: currentFileDataUri,
           fileType: currentFile.type,
-          instructions: currentFileInstructions,
+          instructions: finalInstructions,
         });
          const assistantMessage: Message = {
           id: Date.now() + 1,
@@ -260,17 +269,18 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             audioRef.current.src = audioResult.media;
             audioRef.current.play();
           }
-        } catch (ttsError: any) {
-          console.error("TTS Error:", ttsError);
-          const description = ttsError.message.includes("429")
-            ? "You've exceeded the daily limit for audio responses."
-            : "Could not generate audio response.";
-          toast({
-            variant: "destructive",
-            title: "Text-to-Speech Failed",
-            description: description,
-          });
-        }
+        } catch (ttsError: any)          {
+            console.error('TTS Error:', ttsError);
+            const description =
+              (ttsError as Error).message.includes('429') ?
+              "You've exceeded the daily limit for audio responses." :
+              'Could not generate audio response.';
+            toast({
+              variant: 'destructive',
+              title: 'Text-to-Speech Failed',
+              description: description,
+            });
+          }
       }
     } catch (error) {
       console.error("Error processing file:", error);
@@ -303,6 +313,8 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
       recognitionRef.current.start();
     }
   };
+
+  const isFileSubmitDisabled = isLoading || !file || !fileInstructions.trim();
 
   return (
     <div className="flex flex-col h-full">
@@ -405,8 +417,8 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
                   />
                 </div>
                 <Button
-                  onClick={handleFileSubmit}
-                  disabled={isLoading || !fileInstructions.trim()}
+                  onClick={() => handleFileSubmit()}
+                  disabled={isFileSubmitDisabled}
                   className="w-full"
                 >
                   {isLoading ? (
@@ -428,7 +440,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
           }}
         >
           <Textarea
-            placeholder="Ask me anything or attach a file..."
+            placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
             className="min-h-[140px] rounded-2xl resize-none p-4 pr-32 border-border bg-card"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -438,7 +450,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
                 handleSendMessage();
               }
             }}
-            disabled={isLoading || !!file || isRecording}
+            disabled={isLoading || isRecording}
           />
           <div className="absolute top-3 right-3 flex items-center gap-1">
             <Button
@@ -457,7 +469,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
               size="icon"
               variant="ghost"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || !!file}
+              disabled={isLoading}
               aria-label="Attach file"
               className="h-8 w-8"
             >
