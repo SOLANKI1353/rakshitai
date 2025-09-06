@@ -139,6 +139,13 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     }
   };
 
+    const isCodingRequest = (text: string) => {
+        const codingKeywords = ['code', 'coding', 'programming', 'develop', 'build', 'create', 'app', 'website', 'script', 'html', 'css', 'javascript', 'python', 'java', 'c++', 'react', 'next.js', 'component'];
+        const lowerCaseText = text.toLowerCase();
+        return codingKeywords.some(keyword => lowerCaseText.includes(keyword));
+    };
+
+
   const handleSendMessage = async (messageText: string = input) => {
     const trimmedInput = messageText.trim();
     if (!trimmedInput || isLoading) return;
@@ -165,10 +172,13 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
     try {
       let result;
-      // For any request that isn't clearly a file submission,
-      // we'll assume it might be a coding request and use the powerful model.
-      const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
-      result = { response: gptResult.generatedText };
+      // Check if the prompt is likely a coding request
+      if (isCodingRequest(trimmedInput)) {
+          const gptResult = await generateTextWithChatGPT({ prompt: trimmedInput });
+          result = { response: gptResult.generatedText };
+      } else {
+          result = await respondInPreferredLanguage({ query: trimmedInput });
+      }
       
       const assistantMessage: Message = {
         id: Date.now() + 1,
