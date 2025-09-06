@@ -53,13 +53,15 @@ You cannot actually build the APK. Your role is to guide the user on how to do i
 
 A user has uploaded their web project as a ZIP file and wants to create an APK from it. Analyze the project structure and provide clear, step-by-step instructions.
 
+The user's instructions are in Hindi. You MUST respond in polite, clear, and easy-to-understand Hindi.
+
 Instructions from user: {{{instructions}}}
 Project ZIP file: {{media url=projectZipDataUri}}
 
 Your Task:
 1.  Determine if the project is a standard web project (React, Next.js, Vue, etc.) suitable for conversion. Set 'isPossible' to true or false.
-2.  If it's not possible, explain why in the 'guidance' field.
-3.  If it is possible, provide detailed, step-by-step guidance in the 'guidance' field. Recommend using a tool like Capacitor.
+2.  If it's not possible, explain why in the 'guidance' field in Hindi.
+3.  If it is possible, provide detailed, step-by-step guidance in the 'guidance' field in Hindi. Recommend using a tool like Capacitor.
 4.  The guidance should include:
     -   Prerequisites (like installing Node.js, Android Studio).
     -   Commands to install Capacitor CLI.
@@ -69,8 +71,8 @@ Your Task:
     -   How to build the web assets.
     -   How to open the project in Android Studio.
     -   How to build and run the app to generate the APK from Android Studio.
+    -   Explain each step clearly in Hindi.
 
-Respond in the user's language (the instructions are in Hindi, so respond in Hindi).
 Your final output must be a JSON object with 'guidance' and 'isPossible' keys.`,
 });
 
