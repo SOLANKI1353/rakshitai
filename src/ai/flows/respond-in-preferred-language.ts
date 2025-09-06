@@ -38,7 +38,7 @@ const detectLanguageTool = ai.defineTool(
   },
   async (input) => {
     const { output } = await ai.generate({
-      prompt: `Detect the language of the following text. The possible languages are English, Gujarati, and Hindi. Respond with only the name of the language. Text: "${input.text}"`,
+      prompt: `Detect the language of the following text. The possible languages are English, Gujarati, and Hindi. Respond with only the name of the language in English. Text: "${input.text}"`,
     });
     
     const detectedLanguage = output as string;
@@ -57,13 +57,13 @@ const respondInPreferredLanguagePrompt = ai.definePrompt({
   output: {schema: RespondInPreferredLanguageOutputSchema},
   prompt: `You are an AI assistant that can understand and respond in multiple languages. Your goal is to respond to the user in the same language they used.
 
-First, use the detectLanguage tool to identify the language of the user's query.
+First, use the detectLanguage tool to identify the language of the user's query. The tool will return 'English', 'Gujarati', or 'Hindi'.
 - If the language is detected as Gujarati, Hindi, or English, formulate a helpful response to their query in that same detected language.
 - If the language is not one of the three supported languages, respond in English.
 
 User Query: {{{query}}}
 
-Your final output must be a JSON object with a single key "response" containing your answer.`, 
+Your final output must be a JSON object with a single key "response" containing your answer in the correct language.`, 
 });
 
 const respondInPreferredLanguageFlow = ai.defineFlow(
