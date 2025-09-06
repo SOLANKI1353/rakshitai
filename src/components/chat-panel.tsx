@@ -60,7 +60,6 @@ type ChatPanelProps = {
 
 const CodeBlock = ({ children }: { children: string }) => {
   const [isCopied, setIsCopied] = useState(false);
-  const codeRef = useRef<HTMLElement>(null);
 
   // Simple regex to find language, e.g., ```javascript
   const langMatch = children.match(/^```(\w+)\n/);
@@ -68,11 +67,9 @@ const CodeBlock = ({ children }: { children: string }) => {
   const code = children.replace(/^```\w+\n/, '').replace(/```$/, '');
 
   const handleCopy = () => {
-    if (codeRef.current) {
-      navigator.clipboard.writeText(code);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
+    navigator.clipboard.writeText(code);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
   
   const canPreview = ['html', 'javascript', 'js', 'css'].includes(language.toLowerCase());
@@ -113,8 +110,8 @@ const CodeBlock = ({ children }: { children: string }) => {
             </Button>
           </div>
         </div>
-        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto">
-          <code ref={codeRef} className={`language-${language}`}>
+        <pre className="p-4 text-sm whitespace-pre-wrap">
+          <code className={`language-${language}`}>
             {code}
           </code>
         </pre>
