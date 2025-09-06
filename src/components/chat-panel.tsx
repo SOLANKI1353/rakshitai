@@ -61,7 +61,6 @@ type ChatPanelProps = {
 const CodeBlock = ({ children }: { children: string }) => {
   const [isCopied, setIsCopied] = useState(false);
 
-  // Simple regex to find language, e.g., ```javascript
   const langMatch = children.match(/^```(\w+)?\n/);
   const language = langMatch && langMatch[1] ? langMatch[1] : 'code';
   const code = children.replace(/^```\w*\n/, '').replace(/```$/, '');
@@ -97,6 +96,7 @@ const CodeBlock = ({ children }: { children: string }) => {
                  <DialogTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-7 w-7">
                         <Eye className="h-4 w-4" />
+                        <span className="sr-only">Preview</span>
                     </Button>
                  </DialogTrigger>
              )}
@@ -107,6 +107,7 @@ const CodeBlock = ({ children }: { children: string }) => {
               onClick={handleCopy}
             >
               {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+               <span className="sr-only">Copy code</span>
             </Button>
           </div>
         </div>
@@ -276,7 +277,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     ];
     const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
     
-    // Prioritize file-based flows if a file is present.
+    // If a file is present, let the file handlers decide. This is a text-only decision.
     if (file) {
       return false;
     }
@@ -292,6 +293,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     const trimmedInput = messageText.trim();
     if (!trimmedInput || isLoading) return;
 
+    // This is the only path where a file gets handled now.
     if (file && fileDataUri) {
         await handleFileSubmit();
         return;
@@ -367,10 +369,12 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     }
   };
 
-  const handleFileSubmit = async (instructions?: string) => {
-    const finalInstructions = instructions || fileInstructions;
-    if (!file || !fileDataUri || !finalInstructions.trim() || isLoading) {
-         if(!finalInstructions.trim()){
+  const handleFileSubmit = async () => {
+    // Instructions can come from the main input if fileInstructions is empty
+    const finalInstructions = fileInstructions.trim() || input.trim();
+
+    if (!file || !fileDataUri || !finalInstructions || isLoading) {
+         if(!finalInstructions){
             toast({
                 variant: "destructive",
                 title: "Instructions Required",
@@ -490,7 +494,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     });
   };
 
-  const isFileSubmitDisabled = isLoading || !file || !fileInstructions.trim();
+  const isFileSubmitDisabled = isLoading || !file || !(fileInstructions.trim() || input.trim());
   
   const showWelcomeMessage = messages.length === 0 && !isLoading;
 
@@ -618,12 +622,23 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
           <Textarea
             placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
             className="min-h-[60px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            value={file ? (fileInstructions || input) : input}
+            onChange={(e) => {
+              if (file) {
+                 setInput(e.target.value);
+                 setFileInstructions(e.target.value);
+              } else {
+                setInput(e.target.value)
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSendMessage();
+                 if (file) {
+                    handleFileSubmit();
+                 } else {
+                    handleSendMessage();
+                 }
               }
             }}
             disabled={isLoading || isRecording}
@@ -668,14 +683,14 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             </Button>
             <input
               type="file"
-              ref={fileInputRef}
+              ref={fileInputref}
               onChange={handleFileChange}
               className="hidden"
             />
             <Button
               type="submit"
               size="icon"
-              disabled={isLoading || !input.trim() && !file}
+              disabled={isLoading || (!input.trim() && !file)}
               aria-label="Send message"
               className="h-8 w-8"
             >
