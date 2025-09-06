@@ -24,9 +24,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    allowedDevOrigins: ['*'],
-  },
+  experimental: {},
+  allowedDevOrigins: ['*'],
 };
 
 export default nextConfig;
