@@ -5,6 +5,7 @@ import {
   Bot,
   CornerDownLeft,
   Loader2,
+  Mic,
   Paperclip,
   Send,
   User,
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-language";
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
+import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +29,14 @@ type Message = {
   role: "user" | "assistant";
   content: string;
 };
+
+// Extend Window interface for SpeechRecognition
+interface CustomWindow extends Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
+}
+
+declare let window: CustomWindow;
 
 export function ChatPanel() {
   const { toast } = useToast();
@@ -40,12 +50,16 @@ export function ChatPanel() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [fileDataUri, setFileDataUri] = useState<string | null>(null);
   const [fileInstructions, setFileInstructions] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -55,6 +69,44 @@ export function ChatPanel() {
       });
     }
   }, [messages]);
+
+   useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US'; // Default language
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        handleSendMessage(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        toast({
+            variant: "destructive",
+            title: "Speech Recognition Error",
+            description: `An error occurred: ${event.error}`,
+        });
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+        console.warn("Speech Recognition not supported in this browser.");
+    }
+  }, [toast]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -77,26 +129,35 @@ export function ChatPanel() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSendMessage = async (messageText: string = input) => {
+    const trimmedInput = messageText.trim();
+    if (!trimmedInput || isLoading) return;
     setIsLoading(true);
 
     const newUserMessage: Message = {
       id: Date.now(),
       role: "user",
-      content: input,
+      content: trimmedInput,
     };
     setMessages((prev) => [...prev, newUserMessage]);
     setInput("");
 
     try {
-      const result = await respondInPreferredLanguage({ query: input });
+      const result = await respondInPreferredLanguage({ query: trimmedInput });
       const assistantMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
         content: result.response,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Generate and play audio
+      const audioResult = await textToSpeech(result.response);
+      if (audioRef.current) {
+        audioRef.current.src = audioResult.media;
+        audioRef.current.play();
+      }
+
     } catch (error) {
       console.error("Error with AI response:", error);
       const errorMessage: Message = {
@@ -139,6 +200,14 @@ export function ChatPanel() {
         content: result.analysisResult,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Generate and play audio
+      const audioResult = await textToSpeech(result.analysisResult);
+      if (audioRef.current) {
+        audioRef.current.src = audioResult.media;
+        audioRef.current.play();
+      }
+
     } catch (error) {
       console.error("Error analyzing file:", error);
       const errorMessage: Message = {
@@ -150,6 +219,22 @@ export function ChatPanel() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+         toast({
+            variant: "destructive",
+            title: "Browser Not Supported",
+            description: "Speech recognition is not supported in your browser.",
+        });
+        return;
+    }
+    if (isRecording) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
     }
   };
 
@@ -206,6 +291,7 @@ export function ChatPanel() {
           )}
         </div>
       </ScrollArea>
+       <audio ref={audioRef} className="hidden" />
       <div className="relative">
         {file && (
           <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95">
@@ -260,7 +346,7 @@ export function ChatPanel() {
         >
           <Textarea
             placeholder="Ask me anything or attach a file..."
-            className="min-h-[52px] rounded-2xl resize-none p-4 pr-24 border"
+            className="min-h-[52px] rounded-2xl resize-none p-4 pr-36 border"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -269,9 +355,19 @@ export function ChatPanel() {
                 handleSendMessage();
               }
             }}
-            disabled={isLoading || !!file}
+            disabled={isLoading || !!file || isRecording}
           />
           <div className="absolute top-3.5 right-3 flex items-center gap-1">
+            <Button
+              type="button"
+              size="icon"
+              variant={isRecording ? "destructive" : "ghost"}
+              onClick={toggleRecording}
+              disabled={isLoading || !!file}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
             <Button
               type="button"
               size="icon"
