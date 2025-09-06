@@ -229,9 +229,9 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         // More specific keywords to avoid false positives
         const codingKeywords = [
             'code', 'function', 'javascript', 'python', 'react',
-            'html', 'css', 'algorithm', 'component',
+            'html', 'css', 'algorithm', 'component', 'script',
             'next.js', 'build', 'how to', 'show me',
-            'fix', 'debug', 'create', 'write'
+            'fix', 'debug', 'create', 'write', 'implement', 'generate'
         ];
         // Check if it's a question about coding concepts
         const questionKeywords = ['what is', 'how does', 'explain', 'compare'];
@@ -585,7 +585,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         >
           <Textarea
             placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-            className="min-h-[60px] rounded-2xl resize-none p-4 pr-32 border-border bg-card shadow-lg"
+            className="min-h-[60px] rounded-2xl resize-none p-4 pr-40 border-border bg-card shadow-lg"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -597,16 +597,20 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             disabled={isLoading || isRecording}
           />
           <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
-            <div className="flex items-center gap-1 border-r pr-2 mr-1">
-                <Label htmlFor="tts-switch" className="text-sm text-muted-foreground cursor-pointer">
-                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+             <div className="flex items-center gap-0.5 border-r pr-1 mr-1">
+                <Label htmlFor="tts-switch" className="sr-only">
+                    Toggle TTS
                 </Label>
                 <Switch
                     id="tts-switch"
                     checked={isTtsEnabled}
                     onCheckedChange={setIsTtsEnabled}
                     aria-label="Toggle text-to-speech"
+                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
                 />
+                 <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
+                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+                </Label>
             </div>
             <Button
               type="button"
