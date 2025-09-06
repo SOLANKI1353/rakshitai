@@ -26,6 +26,13 @@ import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Message = {
   id: number;
@@ -55,6 +62,7 @@ export function ChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const [speechLang, setSpeechLang] = useState("en-US");
 
   const [file, setFile] = useState<File | null>(null);
   const [fileDataUri, setFileDataUri] = useState<string | null>(null);
@@ -80,7 +88,7 @@ export function ChatPanel() {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = "en-US"; // Default language
+      recognition.lang = speechLang;
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -110,7 +118,7 @@ export function ChatPanel() {
     } else {
       console.warn("Speech Recognition not supported in this browser.");
     }
-  }, [toast]);
+  }, [toast, speechLang]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -269,6 +277,8 @@ export function ChatPanel() {
     if (isRecording) {
       recognitionRef.current.stop();
     } else {
+      // Update language before starting
+      recognitionRef.current.lang = speechLang;
       recognitionRef.current.start();
     }
   };
@@ -409,7 +419,17 @@ export function ChatPanel() {
             }}
             disabled={isLoading || !!file || isRecording}
           />
-          <div className="absolute top-3.5 right-3 flex items-center gap-1">
+          <div className="absolute top-2 right-3 flex items-center gap-1">
+             <Select value={speechLang} onValueChange={setSpeechLang}>
+                <SelectTrigger className="w-[120px] h-8 text-xs">
+                    <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="en-US">English</SelectItem>
+                    <SelectItem value="hi-IN">Hindi</SelectItem>
+                    <SelectItem value="gu-IN">Gujarati</SelectItem>
+                </SelectContent>
+            </Select>
             <Button
               type="button"
               size="icon"
@@ -417,8 +437,9 @@ export function ChatPanel() {
               onClick={toggleRecording}
               disabled={isLoading || !!file}
               aria-label={isRecording ? "Stop recording" : "Start recording"}
+              className="h-8 w-8"
             >
-              <Mic className="h-5 w-5" />
+              <Mic className="h-4 w-4" />
             </Button>
             <Button
               type="button"
@@ -427,8 +448,9 @@ export function ChatPanel() {
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || !!file}
               aria-label="Attach file"
+              className="h-8 w-8"
             >
-              <Paperclip className="h-5 w-5" />
+              <Paperclip className="h-4 w-4" />
             </Button>
             <input
               type="file"
@@ -441,8 +463,9 @@ export function ChatPanel() {
               size="icon"
               disabled={isLoading || !input.trim()}
               aria-label="Send message"
+              className="h-8 w-8"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </form>

@@ -74,6 +74,8 @@ Based on the tool's output, you MUST formulate a helpful response to the user's 
 
 If the user asks to open a website or app (like YouTube, Google, etc.), you should identify the URL and include it in the 'action' part of your response. For example, if the user says "Open YouTube", your action should be to open 'https://www.youtube.com'. If the user says "Open Google", your action should be to open 'https://www.google.com'. Your response text should confirm the action, e.g., "Opening YouTube."
 
+If the user asks a question about coding, programming, software development, or asks you to write code, you must provide a helpful and accurate answer. Provide code snippets when appropriate, using markdown for formatting.
+
 User Query: {{{query}}}
 
 Your final output must be a JSON object with a "response" key containing your answer, and an optional "action" key if a URL needs to be opened.`, 
@@ -90,3 +92,5 @@ const respondInPreferredLanguageFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    
