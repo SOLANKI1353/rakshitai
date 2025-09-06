@@ -9,6 +9,7 @@ import {
   Languages,
   Sun,
   Moon,
+  Monitor,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -35,7 +36,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "./theme-toggle";
 import {
   Select,
   SelectContent,
@@ -44,45 +44,105 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { 
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "./ui/label";
+
+function ThemeToggleButtons() {
+    const { theme, setTheme } = useTheme();
+
+    return (
+        <div className="grid grid-cols-3 gap-2">
+            <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                onClick={() => setTheme('light')}
+                className="flex flex-col h-auto p-4 gap-1"
+            >
+                <Sun className="w-6 h-6" />
+                Light
+            </Button>
+            <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                onClick={() => setTheme('dark')}
+                className="flex flex-col h-auto p-4 gap-1"
+
+            >
+                <Moon className="w-6 h-6" />
+                Dark
+            </Button>
+            <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                onClick={() => setTheme('system')}
+                className="flex flex-col h-auto p-4 gap-1"
+            >
+                <Monitor className="w-6 h-6" />
+                System
+            </Button>
+        </div>
+    )
+}
 
 function UserMenu({ onLogout }: { onLogout: () => void }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start gap-2 px-2 text-sm h-10">
-          <Avatar className="h-8 w-8 border-2 border-primary/50">
-            <AvatarFallback className="bg-primary/10">R</AvatarFallback>
-          </Avatar>
-          <span className="truncate">Rakshit</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Rakshit</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              rakshit@example.com
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="w-full justify-start gap-2 px-2 text-sm h-10">
+            <Avatar className="h-8 w-8 border-2 border-primary/50">
+              <AvatarFallback className="bg-primary/10">R</AvatarFallback>
+            </Avatar>
+            <span className="truncate">Rakshit</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">Rakshit</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                rakshit@example.com
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DialogTrigger asChild>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </DialogTrigger>
+          <DropdownMenuItem onClick={onLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DialogContent>
+        <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+                Customize the application's appearance and other settings.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label>Theme</Label>
+                <ThemeToggleButtons />
+            </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 
 export default function Dashboard() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const [speechLang, setSpeechLang] = React.useState("en-US");
 
   const handleLogout = () => {
@@ -124,24 +184,6 @@ export default function Dashboard() {
                         <SelectItem value="gu-IN">Gujarati</SelectItem>
                     </SelectContent>
                 </Select>
-            <div className="flex items-center gap-1">
-                <Button 
-                    variant="ghost" 
-                    className={cn("w-full justify-start", theme === 'light' && "bg-accent")}
-                    onClick={() => setTheme('light')}
-                >
-                    <Sun />
-                    <span>Light</span>
-                </Button>
-                <Button 
-                    variant="ghost" 
-                    className={cn("w-full justify-start", theme === 'dark' && "bg-accent")}
-                    onClick={() => setTheme('dark')}
-                >
-                    <Moon />
-                    <span>Dark</span>
-                </Button>
-            </div>
             <UserMenu onLogout={handleLogout} />
           </SidebarFooter>
         </Sidebar>
