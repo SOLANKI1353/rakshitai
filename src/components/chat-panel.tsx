@@ -62,9 +62,9 @@ const CodeBlock = ({ children }: { children: string }) => {
   const [isCopied, setIsCopied] = useState(false);
 
   // Simple regex to find language, e.g., ```javascript
-  const langMatch = children.match(/^```(\w+)\n/);
-  const language = langMatch ? langMatch[1] : 'code';
-  const code = children.replace(/^```\w+\n/, '').replace(/```$/, '');
+  const langMatch = children.match(/^```(\w+)?\n/);
+  const language = langMatch && langMatch[1] ? langMatch[1] : 'code';
+  const code = children.replace(/^```\w*\n/, '').replace(/```$/, '');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -481,7 +481,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
   };
   
   const renderMessageContent = (content: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/g);
+    const parts = content.split(/(```[\s\S]*?```)/g).filter(Boolean);
     return parts.map((part, index) => {
       if (part.startsWith('```')) {
         return <CodeBlock key={index}>{part}</CodeBlock>;
