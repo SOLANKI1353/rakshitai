@@ -6,6 +6,7 @@ import {
   LogOut,
   Settings,
   Languages,
+  LayoutDashboard,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -40,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Link from "next/link";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -67,6 +69,14 @@ export default function Dashboard() {
                   <MessageSquare />
                   <span>Chat</span>
                 </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <Link href="/hr-dashboard">
+                  <SidebarMenuButton>
+                    <LayoutDashboard />
+                    <span>HR Dashboard</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
@@ -132,3 +142,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
