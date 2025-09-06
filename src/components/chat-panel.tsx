@@ -80,7 +80,7 @@ const CodeBlock = ({ children }: { children: string }) => {
           {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
         </Button>
       </div>
-      <pre className="overflow-x-auto p-4 text-sm">
+      <pre className="p-4 text-sm whitespace-pre-wrap">
         <code ref={codeRef} className={`language-${language}`}>
           {code}
         </code>
@@ -585,7 +585,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         >
           <Textarea
             placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-            className="min-h-[60px] rounded-2xl resize-none p-4 pr-40 border-border bg-card shadow-lg"
+            className="min-h-[60px] rounded-2xl resize-none p-4 pr-36 border-border bg-card shadow-lg"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
