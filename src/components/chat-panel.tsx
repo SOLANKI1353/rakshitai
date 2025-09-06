@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-language";
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
+import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +56,7 @@ export function ChatPanel() {
       id: 1,
       role: "assistant",
       content:
-        "Hello! I am RakshitAI. How can I help you today? You can ask me questions in English, Hindi, or Gujarati.",
+        "Hello! I am RakshitAI. I can answer your questions, write code, analyze files, and even guide you on creating an APK from your web project. How can I help you today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -202,11 +203,11 @@ export function ChatPanel() {
     }
   };
 
-  const handleAnalyzeFile = async () => {
+  const handleFileSubmit = async () => {
     if (!file || !fileDataUri || !fileInstructions.trim() || isLoading) return;
     setIsLoading(true);
 
-    const userMessageContent = `Analyzing file: ${file.name}.\nInstructions: ${fileInstructions}`;
+    const userMessageContent = `File: ${file.name}.\nInstructions: ${fileInstructions}`;
     const newUserMessage: Message = {
       id: Date.now(),
       role: "user",
@@ -214,27 +215,51 @@ export function ChatPanel() {
     };
     setMessages((prev) => [...prev, newUserMessage]);
 
+    // Reset file state
+    const currentFile = file;
+    const currentFileDataUri = fileDataUri;
+    const currentFileInstructions = fileInstructions;
     setFile(null);
     setFileDataUri(null);
     setFileInstructions("");
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
-      const result = await analyzeUploadedFile({
-        fileDataUri,
-        fileType: file.type,
-        instructions: fileInstructions,
-      });
-      const assistantMessage: Message = {
-        id: Date.now() + 1,
-        role: "assistant",
-        content: result.analysisResult,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      let result;
+      // Check if the user is asking to build an APK
+      if (currentFileInstructions.toLowerCase().includes("apk")) {
+        result = await apkBuilderAgent({
+          projectZipDataUri: currentFileDataUri,
+          instructions: currentFileInstructions,
+        });
+        const assistantMessage: Message = {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: result.isPossible
+            ? result.guidance
+            : `Sorry, I can't convert this project. ${result.guidance}`,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        // Use the general file analyzer
+        result = await analyzeUploadedFile({
+          fileDataUri: currentFileDataUri,
+          fileType: currentFile.type,
+          instructions: currentFileInstructions,
+        });
+         const assistantMessage: Message = {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: result.analysisResult,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
 
-      if (isTtsEnabled) {
+      const responseText = (result as any).guidance || (result as any).analysisResult;
+
+      if (isTtsEnabled && responseText) {
         try {
-          const audioResult = await textToSpeech(result.analysisResult);
+          const audioResult = await textToSpeech(responseText);
           if (audioRef.current) {
             audioRef.current.src = audioResult.media;
             audioRef.current.play();
@@ -252,12 +277,12 @@ export function ChatPanel() {
         }
       }
     } catch (error) {
-      console.error("Error analyzing file:", error);
+      console.error("Error processing file:", error);
       const errorMessage: Message = {
         id: Date.now() + 1,
         role: "assistant",
         content:
-          "Sorry, I couldn't analyze the file. Please check the file and try again.",
+          "Sorry, I couldn't process the file. Please check the file and try again.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -356,7 +381,7 @@ export function ChatPanel() {
             <CardContent className="p-4">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-sm font-medium">
-                  Analyzing File: {file.name}
+                  File: {file.name}
                 </p>
                 <Button
                   variant="ghost"
@@ -378,13 +403,13 @@ export function ChatPanel() {
                   </Label>
                   <Input
                     id="instructions"
-                    placeholder="e.g., 'Summarize the contents of this zip file'"
+                    placeholder="e.g., 'Summarize this file' or 'Convert this project to APK'"
                     value={fileInstructions}
                     onChange={(e) => setFileInstructions(e.target.value)}
                   />
                 </div>
                 <Button
-                  onClick={handleAnalyzeFile}
+                  onClick={handleFileSubmit}
                   disabled={isLoading || !fileInstructions.trim()}
                   className="w-full"
                 >
@@ -393,7 +418,7 @@ export function ChatPanel() {
                   ) : (
                     <CornerDownLeft className="mr-2 h-4 w-4" />
                   )}
-                  Analyze
+                  Submit File
                 </Button>
               </div>
             </CardContent>
@@ -408,7 +433,7 @@ export function ChatPanel() {
         >
           <Textarea
             placeholder="Ask me anything or attach a file..."
-            className="min-h-[80px] rounded-2xl resize-none p-4 pr-36 border-border bg-secondary"
+            className="min-h-[120px] rounded-2xl resize-none p-4 pr-36 border-border bg-secondary"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
