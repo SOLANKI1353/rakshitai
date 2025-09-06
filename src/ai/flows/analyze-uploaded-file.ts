@@ -49,11 +49,13 @@ const analyzeUploadedFilePrompt = ai.definePrompt({
 
 You will analyze the content of the uploaded file based on the provided instructions and file type.
 
+If the file is a ZIP archive, you MUST look inside the archive and analyze the files within it to answer the user's request. You have the capability to inspect the contents of ZIP files.
+
 File Type: {{{fileType}}}
 Instructions: {{{instructions}}}
 File Data: {{media url=fileDataUri}}
 
-Analysis Result:`,
+Provide a detailed analysis based on the user's instructions. If the user asks for code, provide complete, runnable code snippets with explanations.`,
 });
 
 const analyzeUploadedFileFlow = ai.defineFlow(

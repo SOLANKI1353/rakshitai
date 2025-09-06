@@ -51,7 +51,7 @@ const apkBuilderAgentPrompt = ai.definePrompt({
 
 You cannot actually build the APK. Your role is to guide the user on how to do it themselves.
 
-A user has uploaded their web project as a ZIP file and wants to create an APK from it. Analyze the project structure and provide clear, step-by-step instructions.
+A user has uploaded their web project as a ZIP file and wants to create an APK from it. You must analyze the project structure and code within the ZIP file to provide clear, step-by-step instructions.
 
 The user's instructions are in Hindi. You MUST respond in polite, clear, and easy-to-understand Hindi.
 
@@ -59,16 +59,15 @@ Instructions from user: {{{instructions}}}
 Project ZIP file: {{media url=projectZipDataUri}}
 
 Your Task:
-1.  Determine if the project is a standard web project (React, Next.js, Vue, etc.) suitable for conversion. Set 'isPossible' to true or false.
-2.  If it's not possible, explain why in the 'guidance' field in Hindi.
+1.  **Inspect the ZIP file contents.** Look at the file structure, package.json, and other configuration files to determine if the project is a standard web project (React, Next.js, Vue, etc.) suitable for conversion. Set 'isPossible' to true or false.
+2.  If it's not possible (e.g., it's not a web project), explain why in the 'guidance' field in Hindi.
 3.  If it is possible, provide detailed, step-by-step guidance in the 'guidance' field in Hindi. Recommend using a tool like Capacitor.
 4.  The guidance should include:
     -   Prerequisites (like installing Node.js, Android Studio).
     -   Commands to install Capacitor CLI.
     -   Commands to initialize Capacitor in their project.
-    -   Commands to add the Android platform.
-    -   Any necessary configuration changes (e.g., in 'capacitor.config.json').
-    -   How to build the web assets.
+    -   Any necessary configuration changes (e.g., in 'capacitor.config.json'), tailored to the user's project if possible.
+    -   How to build the web assets (e.g., 'npm run build').
     -   How to open the project in Android Studio.
     -   How to build and run the app to generate the APK from Android Studio.
     -   Explain each step clearly in Hindi.
