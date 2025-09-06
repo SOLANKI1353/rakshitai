@@ -683,7 +683,7 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
             </Button>
             <input
               type="file"
-              ref={fileInputref}
+              ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
             />
@@ -702,3 +702,5 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     </div>
   );
 }
+
+    
