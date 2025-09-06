@@ -408,7 +408,7 @@ export function ChatPanel() {
         >
           <Textarea
             placeholder="Ask me anything or attach a file..."
-            className="min-h-[52px] rounded-2xl resize-none p-4 pr-36 border-border bg-secondary"
+            className="min-h-[80px] rounded-2xl resize-none p-4 pr-36 border-border bg-secondary"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -419,7 +419,7 @@ export function ChatPanel() {
             }}
             disabled={isLoading || !!file || isRecording}
           />
-          <div className="absolute top-2 right-3 flex items-center gap-1">
+          <div className="absolute top-3 right-3 flex items-center gap-1">
              <Select value={speechLang} onValueChange={setSpeechLang}>
                 <SelectTrigger className="w-[120px] h-8 text-xs bg-secondary">
                     <SelectValue placeholder="Language" />
