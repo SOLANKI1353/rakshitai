@@ -5,8 +5,10 @@ import {
   MessageSquare,
   LogOut,
   Settings,
+  Languages,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import React from "react";
 import {
   SidebarProvider,
   Sidebar,
@@ -31,9 +33,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "./theme-toggle";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Dashboard() {
   const router = useRouter();
+  const [speechLang, setSpeechLang] = React.useState("en-US");
 
   const handleLogout = () => {
     localStorage.removeItem("rakshit-ai-token");
@@ -68,13 +78,26 @@ export default function Dashboard() {
                 <SidebarTrigger className="md:hidden"/>
                 <h1 className="text-lg font-bold md:hidden">RakshitAI</h1>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
+                <Select value={speechLang} onValueChange={setSpeechLang}>
+                    <SelectTrigger className="w-[130px] h-9 text-xs bg-card border-border">
+                        <div className="flex items-center gap-2">
+                            <Languages className="w-4 h-4 text-muted-foreground" />
+                            <SelectValue placeholder="Language" />
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="en-US">English</SelectItem>
+                        <SelectItem value="hi-IN">Hindi</SelectItem>
+                        <SelectItem value="gu-IN">Gujarati</SelectItem>
+                    </SelectContent>
+                </Select>
                 <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                       <Avatar className="h-10 w-10 border-2 border-primary/50">
-                          <AvatarFallback className="bg-secondary">R</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10">R</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -102,7 +125,7 @@ export default function Dashboard() {
               </div>
           </header>
           <main className="h-[calc(100vh-60px)] overflow-y-auto p-4 md:p-6 lg:p-8">
-              <ChatPanel />
+              <ChatPanel speechLang={speechLang} />
           </main>
         </SidebarInset>
       </SidebarProvider>

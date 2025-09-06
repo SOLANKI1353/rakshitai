@@ -27,13 +27,6 @@ import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type Message = {
   id: number;
@@ -49,7 +42,11 @@ interface CustomWindow extends Window {
 
 declare let window: CustomWindow;
 
-export function ChatPanel() {
+type ChatPanelProps = {
+    speechLang: string;
+}
+
+export function ChatPanel({ speechLang }: ChatPanelProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -63,7 +60,6 @@ export function ChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const [speechLang, setSpeechLang] = useState("en-US");
 
   const [file, setFile] = useState<File | null>(null);
   const [fileDataUri, setFileDataUri] = useState<string | null>(null);
@@ -335,8 +331,8 @@ export function ChatPanel() {
               )}
             >
               {message.role === "assistant" && (
-                <Avatar className="w-8 h-8 border-2 border-primary">
-                  <AvatarFallback className="bg-secondary">
+                <Avatar className="w-8 h-8 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10">
                     <Bot className="w-5 h-5 text-primary" />
                   </AvatarFallback>
                 </Avatar>
@@ -346,15 +342,15 @@ export function ChatPanel() {
                   "max-w-xl rounded-lg px-4 py-3 shadow-md",
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-secondary"
+                    : "bg-card"
                 )}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
               {message.role === "user" && (
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-secondary">
-                    <User className="w-5 h-5 text-primary" />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    <User className="w-5 h-5" />
                   </AvatarFallback>
                 </Avatar>
               )}
@@ -362,12 +358,12 @@ export function ChatPanel() {
           ))}
           {isLoading && (
             <div className="flex items-start gap-3">
-              <Avatar className="w-8 h-8 border-2 border-primary">
-                <AvatarFallback className="bg-secondary">
+              <Avatar className="w-8 h-8 border-2 border-primary/20">
+                <AvatarFallback className="bg-primary/10">
                   <Bot className="w-5 h-5 text-primary" />
                 </AvatarFallback>
               </Avatar>
-              <div className="max-w-xl rounded-lg px-4 py-3 bg-secondary shadow-md flex items-center">
+              <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
               </div>
             </div>
@@ -377,7 +373,7 @@ export function ChatPanel() {
       <audio ref={audioRef} className="hidden" />
       <div className="relative">
         {file && (
-          <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-secondary border-border">
+          <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
             <CardContent className="p-4">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-sm font-medium">
@@ -433,7 +429,7 @@ export function ChatPanel() {
         >
           <Textarea
             placeholder="Ask me anything or attach a file..."
-            className="min-h-[120px] rounded-2xl resize-none p-4 pr-36 border-border bg-secondary"
+            className="min-h-[140px] rounded-2xl resize-none p-4 pr-32 border-border bg-card"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -445,16 +441,6 @@ export function ChatPanel() {
             disabled={isLoading || !!file || isRecording}
           />
           <div className="absolute top-3 right-3 flex items-center gap-1">
-             <Select value={speechLang} onValueChange={setSpeechLang}>
-                <SelectTrigger className="w-[120px] h-8 text-xs bg-secondary">
-                    <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="en-US">English</SelectItem>
-                    <SelectItem value="hi-IN">Hindi</SelectItem>
-                    <SelectItem value="gu-IN">Gujarati</SelectItem>
-                </SelectContent>
-            </Select>
             <Button
               type="button"
               size="icon"
