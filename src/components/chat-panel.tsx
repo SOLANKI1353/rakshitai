@@ -319,7 +319,6 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
-        handleSendMessage(transcript);
       };
 
       recognition.onerror = (event: any) => {
@@ -385,8 +384,8 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   };
 
 
-  const handleSendMessage = async (messageText: string = input) => {
-    const trimmedInput = messageText.trim();
+  const handleSendMessage = async () => {
+    const trimmedInput = input.trim();
     if (!trimmedInput || isLoading) return;
 
     setIsLoading(true);
@@ -721,5 +720,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
-
-    
