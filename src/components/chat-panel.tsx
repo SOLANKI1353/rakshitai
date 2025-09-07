@@ -16,6 +16,10 @@ import {
   Copy,
   Check,
   Eye,
+  File,
+  Search,
+  PenSquare,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +36,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+} from "@/components/ui/dropdown-menu";
+
 import { respondInPreferredLanguage } from "@/ai/flows/respond-in-preferred-language";
 import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
@@ -113,7 +127,7 @@ const CodeBlock = ({ children }: { children: string }) => {
             </Button>
           </div>
         </div>
-        <pre className="p-4 text-sm whitespace-pre-wrap">
+        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto">
           <code className={`language-${language}`}>
             {code}
           </code>
@@ -522,206 +536,249 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
   const showWelcomeMessage = messages.length === 0 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full max-h-full p-4 md:p-6 lg:p-8">
-      <div className="flex-1 w-full max-w-4xl mx-auto">
-        {showWelcomeMessage ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Bot className="w-10 h-10 text-primary" />
-            </div>
-            <h1 className="text-2xl md:text-4xl font-bold text-center">How can I help you today?</h1>
-          </div>
-        ) : (
-          <ScrollArea className="h-full mb-4" ref={scrollAreaRef}>
-            <div className="space-y-6 pr-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex items-start gap-3",
-                    message.role === "user" && "justify-end"
-                  )}
-                >
-                  {message.role === "assistant" && (
-                    <Avatar className="w-8 h-8 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10">
-                        <Bot className="w-5 h-5 text-primary" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={cn(
-                      "max-w-3xl rounded-lg px-4 py-3 shadow-md",
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card"
+    <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+            <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
+                {showWelcomeMessage ? (
+                <div className="flex flex-col items-center justify-center h-full gap-4 pt-20">
+                    <div className="p-3 bg-primary/10 rounded-full">
+                    <Bot className="w-10 h-10 text-primary" />
+                    </div>
+                    <h1 className="text-2xl md:text-4xl font-bold text-center">How can I help you today?</h1>
+                </div>
+                ) : (
+                <ScrollArea className="h-full mb-4" ref={scrollAreaRef}>
+                    <div className="space-y-6 pr-4 py-6">
+                    {messages.map((message) => (
+                        <div
+                        key={message.id}
+                        className={cn(
+                            "flex items-start gap-3",
+                            message.role === "user" && "justify-end"
+                        )}
+                        >
+                        {message.role === "assistant" && (
+                            <Avatar className="w-8 h-8 border-2 border-primary/20">
+                            <AvatarFallback className="bg-primary/10">
+                                <Bot className="w-5 h-5 text-primary" />
+                            </AvatarFallback>
+                            </Avatar>
+                        )}
+                        <div
+                            className={cn(
+                            "max-w-3xl rounded-lg px-4 py-3 shadow-md",
+                            message.role === "user"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-card"
+                            )}
+                        >
+                            {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
+                        </div>
+                        {message.role === "user" && (
+                            <Avatar className="w-8 h-8">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                                <User className="w-5 h-5" />
+                            </AvatarFallback>
+                            </Avatar>
+                        )}
+                        </div>
+                    ))}
+                    {isLoading && (
+                        <div className="flex items-start gap-3">
+                        <Avatar className="w-8 h-8 border-2 border-primary/20">
+                            <AvatarFallback className="bg-primary/10">
+                            <Bot className="w-5 h-5 text-primary" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        </div>
+                        </div>
                     )}
-                  >
-                    {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
-                  </div>
-                  {message.role === "user" && (
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        <User className="w-5 h-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex items-start gap-3">
-                  <Avatar className="w-8 h-8 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10">
-                      <Bot className="w-5 h-5 text-primary" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  </div>
-                </div>
-              )}
+                    </div>
+                </ScrollArea>
+                )}
             </div>
-          </ScrollArea>
-        )}
-      </div>
+        </div>
 
       <audio ref={audioRef} className="hidden" />
-      <div className="relative w-full max-w-4xl mx-auto">
-        {file && (
-          <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-sm font-medium">
-                  File: {file.name}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    setFile(null);
-                    setFileDataUri(null);
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="instructions" className="text-xs">
-                    Instructions
-                  </Label>
-                  <Input
-                    id="instructions"
-                    placeholder="e.g., 'Summarize this file' or 'Convert this project to APK'"
-                    value={fileInstructions}
-                    onChange={(e) => setFileInstructions(e.target.value)}
-                  />
+      <div className="w-full max-w-4xl mx-auto p-4 md:p-6 lg:p-8 pt-0">
+        <div className="relative">
+            {file && (
+            <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
+                <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                    <p className="text-sm font-medium">
+                    File: {file.name}
+                    </p>
+                    <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                        setFile(null);
+                        setFileDataUri(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    >
+                    <X className="h-4 w-4" />
+                    </Button>
+                </div>
+                <div className="space-y-2">
+                    <div>
+                    <Label htmlFor="instructions" className="text-xs">
+                        Instructions
+                    </Label>
+                    <Input
+                        id="instructions"
+                        placeholder="e.g., 'Summarize this file' or 'Convert this project to APK'"
+                        value={fileInstructions}
+                        onChange={(e) => setFileInstructions(e.target.value)}
+                    />
+                    </div>
+                    <Button
+                    onClick={() => handleFileSubmit()}
+                    disabled={isFileSubmitDisabled}
+                    className="w-full"
+                    >
+                    {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <CornerDownLeft className="mr-2 h-4 w-4" />
+                    )}
+                    Submit File
+                    </Button>
+                </div>
+                </CardContent>
+            </Card>
+            )}
+            <form
+            className="relative"
+            onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+            }}
+            >
+            <Textarea
+                placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
+                className="min-h-[60px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
+                value={file ? (fileInstructions || input) : input}
+                onChange={(e) => {
+                if (file) {
+                    setInput(e.target.value);
+                    setFileInstructions(e.target.value);
+                } else {
+                    setInput(e.target.value)
+                }
+                }}
+                onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (file) {
+                        handleFileSubmit();
+                    } else {
+                        handleSendMessage();
+                    }
+                }
+                }}
+                disabled={isLoading || isRecording}
+            />
+            <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
+                <div className="flex items-center gap-0.5 border-r pr-1 mr-1">
+                    <Label htmlFor="tts-switch" className="sr-only">
+                        Toggle TTS
+                    </Label>
+                    <Switch
+                        id="tts-switch"
+                        checked={isTtsEnabled}
+                        onCheckedChange={setIsTtsEnabled}
+                        aria-label="Toggle text-to-speech"
+                        className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
+                    />
+                    <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
+                        {isTtsEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
+                    </Label>
                 </div>
                 <Button
-                  onClick={() => handleFileSubmit()}
-                  disabled={isFileSubmitDisabled}
-                  className="w-full"
+                type="button"
+                size="icon"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={toggleRecording}
+                disabled={isLoading || !!file}
+                aria-label={isRecording ? "Stop recording" : "Start recording"}
+                className="h-8 w-8"
                 >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CornerDownLeft className="mr-2 h-4 w-4" />
-                  )}
-                  Submit File
+                <Mic className="h-4 w-4" />
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        <form
-          className="relative"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-        >
-          <Textarea
-            placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-            className="min-h-[60px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
-            value={file ? (fileInstructions || input) : input}
-            onChange={(e) => {
-              if (file) {
-                 setInput(e.target.value);
-                 setFileInstructions(e.target.value);
-              } else {
-                setInput(e.target.value)
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                 if (file) {
-                    handleFileSubmit();
-                 } else {
-                    handleSendMessage();
-                 }
-              }
-            }}
-            disabled={isLoading || isRecording}
-          />
-          <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
-             <div className="flex items-center gap-0.5 border-r pr-1 mr-1">
-                <Label htmlFor="tts-switch" className="sr-only">
-                    Toggle TTS
-                </Label>
-                 <Switch
-                    id="tts-switch"
-                    checked={isTtsEnabled}
-                    onCheckedChange={setIsTtsEnabled}
-                    aria-label="Toggle text-to-speech"
-                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
+                
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                         <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            disabled={isLoading}
+                            aria-label="Attach file"
+                            className="h-8 w-8"
+                            >
+                            <Paperclip className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="mb-2 w-56">
+                        <DropdownMenuLabel>Attach</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                            <File className="mr-2 h-4 w-4" />
+                            <span>Add photos & files</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                            <Search className="mr-2 h-4 w-4" />
+                            <span>Web search</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                             <PenSquare className="mr-2 h-4 w-4" />
+                            <span>Canvas</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                            <DropdownMenuLabel>Connect</DropdownMenuLabel>
+                             <DropdownMenuItem disabled>
+                                <Globe className="mr-2 h-4 w-4" />
+                                <span>Google Drive</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem disabled>
+                                <Globe className="mr-2 h-4 w-4" />
+                                <span>OneDrive</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem disabled>
+                                <Globe className="mr-2 h-4 w-4" />
+                                <span>Sharepoint</span>
+                             </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
                 />
-                 <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
-                    {isTtsEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
-                </Label>
+                <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading || (!input.trim() && !file)}
+                aria-label="Send message"
+                className="h-8 w-8"
+                >
+                <Send className="h-4 w-4" />
+                </Button>
             </div>
-            <Button
-              type="button"
-              size="icon"
-              variant={isRecording ? "destructive" : "ghost"}
-              onClick={toggleRecording}
-              disabled={isLoading || !!file}
-              aria-label={isRecording ? "Stop recording" : "Start recording"}
-              className="h-8 w-8"
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              aria-label="Attach file"
-              className="h-8 w-8"
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={isLoading || (!input.trim() && !file)}
-              aria-label="Send message"
-              className="h-8 w-8"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </form>
+            </form>
+        </div>
       </div>
     </div>
   );
 }
+
+    
