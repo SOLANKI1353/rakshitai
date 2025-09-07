@@ -661,7 +661,7 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
             >
             <Textarea
                 placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-                className="min-h-[60px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
+                className="min-h-[52px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
                 value={file ? (fileInstructions || input) : input}
                 onChange={(e) => {
                 if (file) {
@@ -683,11 +683,8 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                 }}
                 disabled={isLoading || isRecording}
             />
-            <div className="absolute top-1/2 -translate-y-1/2 right-3 flex items-center gap-1">
-                <div className="flex items-center gap-0.5 border-r pr-1 mr-1">
-                    <Label htmlFor="tts-switch" className="sr-only">
-                        Toggle TTS
-                    </Label>
+            <div className="absolute top-1/2 -translate-y-1/2 right-4 flex items-center gap-2">
+                <div className="flex items-center gap-1 border-r pr-2 mr-1">
                     <Switch
                         id="tts-switch"
                         checked={isTtsEnabled}
@@ -696,7 +693,7 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                         className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
                     />
                     <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
-                        {isTtsEnabled ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
+                        {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
                     </Label>
                 </div>
                 <Button
@@ -706,9 +703,8 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                 onClick={toggleRecording}
                 disabled={isLoading || !!file}
                 aria-label={isRecording ? "Stop recording" : "Start recording"}
-                className="h-8 w-8"
                 >
-                <Mic className="h-4 w-4" />
+                <Mic className="h-5 w-5" />
                 </Button>
                 
                 <DropdownMenu>
@@ -719,9 +715,8 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                             variant="ghost"
                             disabled={isLoading}
                             aria-label="Attach file"
-                            className="h-8 w-8"
                             >
-                            <Paperclip className="h-4 w-4" />
+                            <Paperclip className="h-5 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="mb-2 w-56">
@@ -769,9 +764,8 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                 size="icon"
                 disabled={isLoading || (!input.trim() && !file)}
                 aria-label="Send message"
-                className="h-8 w-8"
                 >
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
                 </Button>
             </div>
             </form>
@@ -780,5 +774,3 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
     </div>
   );
 }
-
-    
