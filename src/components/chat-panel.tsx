@@ -76,15 +76,18 @@ type ChatPanelProps = {
 
 const CodeBlock = ({ children }: { children: string }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const codeRef = useRef<HTMLPreElement>(null);
 
   const langMatch = children.match(/^```(\w+)?\n/);
   const language = langMatch && langMatch[1] ? langMatch[1] : 'code';
   const code = children.replace(/^```\w*\n/, '').replace(/```$/, '');
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (codeRef.current) {
+        navigator.clipboard.writeText(codeRef.current.innerText);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    }
   };
   
   const canPreview = ['html', 'javascript', 'js', 'css'].includes(language.toLowerCase());
@@ -127,7 +130,7 @@ const CodeBlock = ({ children }: { children: string }) => {
             </Button>
           </div>
         </div>
-        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto">
+        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto" ref={codeRef}>
           <code className={`language-${language}`}>
             {code}
           </code>
@@ -663,7 +666,7 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                     <div className="relative rounded-full border bg-card shadow-lg">
                         <Textarea
                             placeholder={file ? "Provide instructions..." : "Ask me anything..."}
-                            className="min-h-[56px] w-full resize-none rounded-full border-none bg-transparent p-4 pr-44 shadow-none focus-visible:ring-0"
+                            className="min-h-[56px] w-full resize-none rounded-full border-none bg-transparent p-4 pr-[170px] shadow-none focus-visible:ring-0"
                             value={file ? (fileInstructions || input) : input}
                             onChange={(e) => file ? setFileInstructions(e.target.value) : setInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -675,18 +678,16 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                             disabled={isLoading || isRecording}
                             rows={1}
                         />
-                        <div className="absolute bottom-3 right-4 flex items-center gap-2">
+                        <div className="absolute bottom-3 right-4 flex items-center gap-1">
                              <div className="flex items-center gap-1 border-r pr-2 mr-1">
-                                <Label htmlFor="tts-switch" className="flex items-center gap-1 cursor-pointer">
-                                    <Switch
-                                        id="tts-switch"
-                                        checked={isTtsEnabled}
-                                        onCheckedChange={setIsTtsEnabled}
-                                        aria-label="Toggle text-to-speech"
-                                        className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
-                                    />
-                                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
-                                </Label>
+                                 <Switch
+                                     id="tts-switch"
+                                     checked={isTtsEnabled}
+                                     onCheckedChange={setIsTtsEnabled}
+                                     aria-label="Toggle text-to-speech"
+                                     className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+                                 />
+                                 {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
                             </div>
                             <Button
                                 type="button"

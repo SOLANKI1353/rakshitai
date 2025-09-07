@@ -60,6 +60,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 export type Conversation = {
     id: string;
@@ -101,7 +109,49 @@ function ThemeToggleButtons() {
     )
 }
 
-function UserMenu({ onLogout }: { onLogout: () => void }) {
+function LanguageSelector({ value, onValueChange }: { value: string, onValueChange: (value: string) => void }) {
+    return (
+        <Select value={value} onValueChange={onValueChange}>
+            <SelectTrigger>
+                <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="en-US">English (US)</SelectItem>
+                <SelectItem value="en-GB">English (UK)</SelectItem>
+                <SelectItem value="es-ES">Español</SelectItem>
+                <SelectItem value="fr-FR">Français</SelectItem>
+                <SelectItem value="de-DE">Deutsch</SelectItem>
+                <SelectItem value="hi-IN">हिन्दी</SelectItem>
+                <SelectItem value="gu-IN">ગુજરાતી</SelectItem>
+            </SelectContent>
+        </Select>
+    );
+}
+
+function SettingsDialog({ speechLang, onSpeechLangChange }: { speechLang: string, onSpeechLangChange: (lang: string) => void }) {
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Settings</DialogTitle>
+                <DialogDescription>
+                    Customize the application's appearance and other settings.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>Theme</Label>
+                    <ThemeToggleButtons />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Speech Language</Label>
+                    <LanguageSelector value={speechLang} onValueChange={onSpeechLangChange} />
+                </div>
+            </div>
+      </DialogContent>
+    )
+}
+
+function UserMenu({ onLogout, speechLang, onSpeechLangChange }: { onLogout: () => void, speechLang: string, onSpeechLangChange: (lang: string) => void }) {
   return (
     <Dialog>
       <DropdownMenu>
@@ -135,20 +185,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <DialogContent>
-        <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-                Customize the application's appearance and other settings.
-            </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-            <div className="space-y-2">
-                <Label>Theme</Label>
-                <ThemeToggleButtons />
-            </div>
-        </div>
-      </DialogContent>
+      <SettingsDialog speechLang={speechLang} onSpeechLangChange={onSpeechLangChange} />
     </Dialog>
   );
 }
@@ -173,8 +210,12 @@ export default function Dashboard() {
                 setActiveConversationId(sorted[0].id);
             }
         }
+        const savedLang = localStorage.getItem("rakshit-ai-speech-lang");
+        if (savedLang) {
+            setSpeechLang(savedLang);
+        }
     } catch (error) {
-        console.error("Failed to load conversations from localStorage", error);
+        console.error("Failed to load from localStorage", error);
     }
   }, []);
 
@@ -190,6 +231,11 @@ export default function Dashboard() {
         console.error("Failed to save conversations to localStorage", error);
     }
   }, [conversations]);
+
+  const handleSpeechLangChange = (lang: string) => {
+    setSpeechLang(lang);
+    localStorage.setItem("rakshit-ai-speech-lang", lang);
+  }
   
   const handleNewChat = () => {
     setActiveConversationId(null);
@@ -212,10 +258,11 @@ export default function Dashboard() {
 
   const handleNewMessage = (newMessage: Message, isUserMessage: boolean) => {
     setConversations(prev => {
-      if (activeConversationId) {
+      let activeId = activeConversationId;
+      if (activeId) {
         // Add message to an existing conversation
         return prev.map(c => 
-          c.id === activeConversationId 
+          c.id === activeId 
             ? { ...c, messages: [...c.messages, newMessage], timestamp: Date.now() }
             : c
         );
@@ -238,6 +285,7 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem("rakshit-ai-token");
     localStorage.removeItem("rakshit-ai-conversations");
+    localStorage.removeItem("rakshit-ai-speech-lang");
     router.push("/login");
   };
   
@@ -297,7 +345,7 @@ export default function Dashboard() {
             </ScrollArea>
           </SidebarContent>
           <SidebarFooter className="mt-auto p-2 space-y-1">
-            <UserMenu onLogout={handleLogout} />
+            <UserMenu onLogout={handleLogout} speechLang={speechLang} onSpeechLangChange={handleSpeechLangChange} />
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
