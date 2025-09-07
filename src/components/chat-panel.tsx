@@ -84,7 +84,7 @@ const CodeBlock = ({ children }: { children: string }) => {
 
   const handleCopy = () => {
     if (codeRef.current) {
-        navigator.clipboard.writeText(codeRef.current.innerText);
+        navigator.clipboard.writeText(code);
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
     }
@@ -164,7 +164,7 @@ const renderMessageContent = (content: string) => {
     
     const inlineParts = part.split(inlineCodeRegex).filter(Boolean);
     return (
-        <p key={index} className="text-sm whitespace-pre-wrap">
+        <div key={index} className="prose prose-sm dark:prose-invert prose-p:whitespace-pre-wrap">
         {inlineParts.map((inlinePart, inlineIndex) => {
             if (inlinePart.startsWith('`')) {
             return (
@@ -178,7 +178,7 @@ const renderMessageContent = (content: string) => {
             }
             return inlinePart;
         })}
-        </p>
+        </div>
     );
   });
 };
@@ -770,3 +770,5 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
     </div>
   );
 }
+
+    
