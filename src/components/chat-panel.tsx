@@ -164,14 +164,48 @@ const CodeBlock = ({ children }: { children: string }) => {
 const renderMessageContent = (content: string) => {
     const codeBlockRegex = /(```[\s\S]*?```)/g;
     const parts = content.split(codeBlockRegex).filter(Boolean);
+
+    const parseMarkdown = (text: string) => {
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const elements = [];
+        let listItems: string[] = [];
+
+        const flushList = () => {
+            if (listItems.length > 0) {
+                elements.push(
+                    <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
+                        {listItems.map((item, i) => (
+                            <li key={`li-${i}`} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+                        ))}
+                    </ul>
+                );
+                listItems = [];
+            }
+        };
+
+        lines.forEach((line, index) => {
+            if (line.startsWith('### ')) {
+                flushList();
+                elements.push(<h3 key={index} className="text-lg font-semibold mt-4 mb-2">{line.substring(4)}</h3>);
+            } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                listItems.push(line.substring(2));
+            } else {
+                flushList();
+                elements.push(<p key={index} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />);
+            }
+        });
+
+        flushList();
+        return elements;
+    };
   
     return (
         <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
         {parts.map((part, index) => {
             if (part.startsWith('```')) {
-            return <CodeBlock key={index}>{part}</CodeBlock>;
+                return <CodeBlock key={index}>{part}</CodeBlock>;
             }
-            return <p key={index}>{part}</p>;
+            return <div key={index}>{parseMarkdown(part)}</div>;
         })}
         </div>
     );
