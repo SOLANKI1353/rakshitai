@@ -161,56 +161,6 @@ const CodeBlock = ({ children }: { children: string }) => {
   );
 };
 
-const renderMessageContent = (content: string) => {
-    const codeBlockRegex = /(```[\s\S]*?```)/g;
-    const parts = content.split(codeBlockRegex).filter(Boolean);
-
-    const parseMarkdown = (text: string) => {
-        const lines = text.split('\n').filter(line => line.trim() !== '');
-        const elements = [];
-        let listItems: string[] = [];
-
-        const flushList = () => {
-            if (listItems.length > 0) {
-                elements.push(
-                    <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
-                        {listItems.map((item, i) => (
-                            <li key={`li-${i}`} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
-                        ))}
-                    </ul>
-                );
-                listItems = [];
-            }
-        };
-
-        lines.forEach((line, index) => {
-            if (line.startsWith('### ')) {
-                flushList();
-                elements.push(<h3 key={index} className="text-lg font-semibold mt-4 mb-2">{line.substring(4)}</h3>);
-            } else if (line.startsWith('* ') || line.startsWith('- ')) {
-                listItems.push(line.substring(2));
-            } else {
-                flushList();
-                elements.push(<p key={index} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />);
-            }
-        });
-
-        flushList();
-        return elements;
-    };
-  
-    return (
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
-        {parts.map((part, index) => {
-            if (part.startsWith('```')) {
-                return <CodeBlock key={index}>{part}</CodeBlock>;
-            }
-            return <div key={index}>{parseMarkdown(part)}</div>;
-        })}
-        </div>
-    );
-};
-
 const useAutosizeTextArea = (
   textAreaRef: HTMLTextAreaElement | null,
   value: string
@@ -238,6 +188,10 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState<string | null>(null);
+
 
   useAutosizeTextArea(textAreaRef.current, input);
   
@@ -323,11 +277,13 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
 
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error", event.error);
-        toast({
-          variant: "destructive",
-          title: "Speech Recognition Error",
-          description: `An error occurred: ${event.error}`,
-        });
+        if (event.error !== 'no-speech') {
+            toast({
+              variant: "destructive",
+              title: "Speech Recognition Error",
+              description: `An error occurred: ${event.error}`,
+            });
+        }
         setIsRecording(false);
       };
 
@@ -340,6 +296,40 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       console.warn("Speech Recognition not supported in this browser.");
     }
   }, [toast, speechLang]);
+  
+   const handlePlayAudio = async (messageId: string, text: string) => {
+    if (currentlyPlaying === messageId) {
+      audioRef.current?.pause();
+      setCurrentlyPlaying(null);
+      return;
+    }
+
+    try {
+      setAudioLoading(messageId);
+      setCurrentlyPlaying(null);
+      
+      const { media } = await textToSpeech(text);
+
+      if (audioRef.current && media) {
+        audioRef.current.src = media;
+        audioRef.current.play();
+        setCurrentlyPlaying(messageId);
+        audioRef.current.onended = () => {
+          setCurrentlyPlaying(null);
+        };
+      }
+    } catch (error) {
+      console.error("Error with text-to-speech:", error);
+      toast({
+        variant: "destructive",
+        title: "Audio Error",
+        description: "Could not play the audio.",
+      });
+    } finally {
+        setAudioLoading(null);
+    }
+  };
+
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -420,8 +410,6 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       };
       onNewMessage(assistantMessage, false);
 
-      // TTS handling is removed for brevity as it's not part of the issue
-      
     } catch (error) {
       console.error("Error with AI response:", error);
       const errorMessage: Message = {
@@ -492,7 +480,6 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       };
       onNewMessage(assistantMessage, false);
 
-      // TTS handling removed for brevity
     } catch (error) {
       console.error("Error processing file:", error);
       const errorMessage: Message = {
@@ -523,6 +510,73 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       recognitionRef.current.start();
     }
   };
+  
+    const renderMessageContent = (content: string, messageId: string) => {
+    const codeBlockRegex = /(```[\s\S]*?```)/g;
+    const parts = content.split(codeBlockRegex).filter(Boolean);
+
+    const parseMarkdown = (text: string) => {
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const elements = [];
+        let listItems: string[] = [];
+
+        const flushList = () => {
+            if (listItems.length > 0) {
+                elements.push(
+                    <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
+                        {listItems.map((item, i) => (
+                            <li key={`li-${i}`} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+                        ))}
+                    </ul>
+                );
+                listItems = [];
+            }
+        };
+
+        lines.forEach((line, index) => {
+            if (line.startsWith('### ')) {
+                flushList();
+                elements.push(<h3 key={index} className="text-lg font-semibold mt-4 mb-2">{line.substring(4)}</h3>);
+            } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                listItems.push(line.substring(2));
+            } else {
+                flushList();
+                elements.push(<p key={index} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />);
+            }
+        });
+
+        flushList();
+        return elements;
+    };
+  
+    return (
+        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
+        {parts.map((part, index) => {
+            if (part.startsWith('```')) {
+                return <CodeBlock key={index}>{part}</CodeBlock>;
+            }
+            return <div key={index}>{parseMarkdown(part)}</div>;
+        })}
+         <div className="mt-2 -ml-2">
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                onClick={() => handlePlayAudio(messageId, content)}
+                disabled={audioLoading !== null}
+            >
+                {audioLoading === messageId ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                ) : currentlyPlaying === messageId ? (
+                    <VolumeX className="h-4 w-4" />
+                ) : (
+                    <Volume2 className="h-4 w-4" />
+                )}
+            </Button>
+        </div>
+        </div>
+    );
+};
   
   const showWelcomeMessage = messages.length === 0 && !isLoading;
   
@@ -566,7 +620,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                              message.role === "user" && "font-semibold"
                           )}
                         >
-                          {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
+                          {message.role === 'assistant' ? renderMessageContent(message.content, message.id) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
                         </div>
                       </div>
                   </div>
@@ -720,3 +774,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
