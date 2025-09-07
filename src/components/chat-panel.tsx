@@ -40,8 +40,8 @@ import { generateTextWithChatGPT } from "@/ai/flows/generate-text-with-chat-gpt"
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-type Message = {
-  id: number;
+export type Message = {
+  id: string;
   role: "user" | "assistant";
   content: string;
 };
@@ -55,7 +55,9 @@ interface CustomWindow extends Window {
 declare let window: CustomWindow;
 
 type ChatPanelProps = {
-    speechLang: string;
+  messages: Message[];
+  onNewMessage: (newMessage: Message, isUserMessage: boolean) => void;
+  speechLang: string;
 }
 
 const CodeBlock = ({ children }: { children: string }) => {
@@ -165,9 +167,8 @@ const renderMessageContent = (content: string) => {
 };
 
 
-export function ChatPanel({ speechLang }: ChatPanelProps) {
+export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps) {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -335,11 +336,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     setIsLoading(true);
 
     const newUserMessage: Message = {
-      id: Date.now(),
+      id: Date.now().toString(),
       role: "user",
       content: trimmedInput,
     };
-    setMessages((prev) => [...prev, newUserMessage]);
+    onNewMessage(newUserMessage, true);
     setInput("");
 
     try {
@@ -358,11 +359,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
       }
       
       const assistantMessage: Message = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: "assistant",
         content: responseText,
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      onNewMessage(assistantMessage, false);
 
 
       if (isTtsEnabled) {
@@ -391,11 +392,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     } catch (error) {
       console.error("Error with AI response:", error);
       const errorMessage: Message = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: "assistant",
         content: "Sorry, I encountered an error. Please try again.",
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      onNewMessage(errorMessage, false);
     } finally {
       setIsLoading(false);
     }
@@ -419,11 +420,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
 
     const userMessageContent = `File: ${file.name}.\nInstructions: ${finalInstructions}`;
     const newUserMessage: Message = {
-      id: Date.now(),
+      id: Date.now().toString(),
       role: "user",
       content: userMessageContent,
     };
-    setMessages((prev) => [...prev, newUserMessage]);
+    onNewMessage(newUserMessage, true);
 
     // Reset file state
     const currentFile = file;
@@ -455,11 +456,11 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
         responseText = result.analysisResult;
       }
        const assistantMessage: Message = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: "assistant",
         content: responseText,
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      onNewMessage(assistantMessage, false);
 
 
       if (isTtsEnabled && responseText) {
@@ -488,12 +489,12 @@ export function ChatPanel({ speechLang }: ChatPanelProps) {
     } catch (error) {
       console.error("Error processing file:", error);
       const errorMessage: Message = {
-        id: Date.now() + 1,
+        id: (Date.now() + 1).toString(),
         role: "assistant",
         content:
           "Sorry, I couldn't process the file. Please check the file and try again.",
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      onNewMessage(errorMessage, false);
     } finally {
       setIsLoading(false);
     }

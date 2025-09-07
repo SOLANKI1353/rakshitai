@@ -6,13 +6,14 @@ import {
   MessageSquare,
   LogOut,
   Settings,
-  Languages,
   Sun,
   Moon,
   Monitor,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import {
   SidebarProvider,
@@ -24,8 +25,9 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ChatPanel } from "@/components/chat-panel";
+import { ChatPanel, Message } from "@/components/chat-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -36,13 +38,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { 
     Dialog,
@@ -53,6 +48,25 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "./ui/label";
+import { ScrollArea } from "./ui/scroll-area";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+export type Conversation = {
+    id: string;
+    title: string;
+    messages: Message[];
+    timestamp: number;
+}
 
 function ThemeToggleButtons() {
     const { theme, setTheme } = useTheme();
@@ -71,7 +85,6 @@ function ThemeToggleButtons() {
                 variant={theme === 'dark' ? 'default' : 'outline'}
                 onClick={() => setTheme('dark')}
                 className="flex flex-col h-auto p-4 gap-1"
-
             >
                 <Moon className="w-6 h-6" />
                 Dark
@@ -143,53 +156,164 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [speechLang, setSpeechLang] = React.useState("en-US");
+  const [speechLang, setSpeechLang] = useState("en-US");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  // Load conversations from localStorage on initial render
+  useEffect(() => {
+    try {
+        const savedConversations = localStorage.getItem("rakshit-ai-conversations");
+        if (savedConversations) {
+            const parsed = JSON.parse(savedConversations);
+            setConversations(parsed);
+            if (parsed.length > 0) {
+                 // Get the most recent conversation and set it as active
+                const sorted = [...parsed].sort((a, b) => b.timestamp - a.timestamp);
+                setActiveConversationId(sorted[0].id);
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load conversations from localStorage", error);
+    }
+  }, []);
+
+  // Save conversations to localStorage whenever they change
+  useEffect(() => {
+    try {
+        if(conversations.length > 0) {
+            localStorage.setItem("rakshit-ai-conversations", JSON.stringify(conversations));
+        } else {
+             localStorage.removeItem("rakshit-ai-conversations");
+        }
+    } catch(error) {
+        console.error("Failed to save conversations to localStorage", error);
+    }
+  }, [conversations]);
+  
+  const handleNewChat = () => {
+    setActiveConversationId(null);
+  };
+
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+  };
+  
+  const handleDeleteConversation = (id: string) => {
+    setConversations(prev => {
+        const newConversations = prev.filter(c => c.id !== id);
+        // If the active conversation is deleted, start a new chat
+        if (activeConversationId === id) {
+            setActiveConversationId(null);
+        }
+        return newConversations;
+    });
+  };
+
+  const handleNewMessage = (newMessage: Message, isUserMessage: boolean) => {
+    setConversations(prev => {
+      if (activeConversationId) {
+        // Add message to an existing conversation
+        return prev.map(c => 
+          c.id === activeConversationId 
+            ? { ...c, messages: [...c.messages, newMessage], timestamp: Date.now() }
+            : c
+        );
+      } else {
+        // Start a new conversation
+        const conversationTitle = newMessage.content.substring(0, 30);
+        const newConversation: Conversation = {
+          id: Date.now().toString(),
+          title: isUserMessage ? `${conversationTitle}...` : "New Chat",
+          messages: [newMessage],
+          timestamp: Date.now(),
+        };
+        setActiveConversationId(newConversation.id);
+        return [newConversation, ...prev];
+      }
+    });
+  };
+
 
   const handleLogout = () => {
     localStorage.removeItem("rakshit-ai-token");
+    localStorage.removeItem("rakshit-ai-conversations");
     router.push("/login");
   };
+  
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+  const sortedConversations = [...conversations].sort((a,b) => b.timestamp - a.timestamp);
 
   return (
     <div className="bg-background min-h-screen">
       <SidebarProvider>
-        <Sidebar collapsible="none" side="left" variant="sidebar" className="border-r-0 md:border-r">
+        <Sidebar collapsible="icon" side="left" variant="sidebar" className="border-r-0 md:border-r">
           <SidebarHeader>
             <div className="flex items-center gap-2">
               <Bot className="size-7 text-primary" />
               <h1 className="text-xl font-bold">Rakshit.AI</h1>
             </div>
           </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive>
-                  <MessageSquare />
-                  <span>Chat</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+          <SidebarContent className="p-0">
+             <div className="p-2">
+                 <Button variant="outline" className="w-full justify-start gap-2" onClick={handleNewChat}>
+                    <Plus className="w-4 h-4" />
+                    <span className="truncate">New Chat</span>
+                </Button>
+            </div>
+            <ScrollArea className="h-full px-2">
+                <SidebarMenu>
+                    {sortedConversations.map(convo => (
+                        <SidebarMenuItem key={convo.id}>
+                            <SidebarMenuButton
+                                isActive={convo.id === activeConversationId}
+                                onClick={() => handleSelectConversation(convo.id)}
+                                className="h-auto py-2"
+                            >
+                                <div className="flex-1 truncate text-left">{convo.title}</div>
+                            </SidebarMenuButton>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-50 hover:opacity-100">
+                                        <Trash2 className="w-4 h-4"/>
+                                     </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this conversation.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteConversation(convo.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+            </ScrollArea>
           </SidebarContent>
           <SidebarFooter className="mt-auto p-2 space-y-1">
-             <Select value={speechLang} onValueChange={setSpeechLang}>
-                    <SelectTrigger className="w-full h-10 text-sm bg-card border-border">
-                        <div className="flex items-center gap-2">
-                            <Languages className="w-4 h-4 text-muted-foreground" />
-                            <SelectValue placeholder="Language" />
-                        </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="en-US">English</SelectItem>
-                        <SelectItem value="hi-IN">Hindi</SelectItem>
-                        <SelectItem value="gu-IN">Gujarati</SelectItem>
-                    </SelectContent>
-                </Select>
             <UserMenu onLogout={handleLogout} />
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
+             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:hidden">
+                <SidebarTrigger />
+                <h1 className="text-lg font-semibold truncate flex-1 text-center pr-8">
+                  {activeConversation ? activeConversation.title : "Rakshit.AI"}
+                </h1>
+            </header>
           <main className="h-screen max-h-screen overflow-y-auto">
-              <ChatPanel speechLang={speechLang} />
+              <ChatPanel
+                key={activeConversationId || "new"}
+                messages={activeConversation?.messages || []}
+                onNewMessage={handleNewMessage}
+                speechLang={speechLang}
+              />
           </main>
         </SidebarInset>
       </SidebarProvider>
