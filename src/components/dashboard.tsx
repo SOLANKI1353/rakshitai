@@ -242,7 +242,7 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => setIsHistoryPanelOpen(true)}>
                 <MessageSquare className="h-5 w-5" />
             </Button>
-             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text animate-pulse">
+             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-transparent bg-clip-text animate-pulse">
                 Rakshit AI
             </h1>
             <SettingsMenu onLogout={handleLogout} speechLang={speechLang} onSpeechLangChange={handleSpeechLangChange} />

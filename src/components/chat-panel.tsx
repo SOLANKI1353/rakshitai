@@ -555,7 +555,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       <div className="flex-1 overflow-y-auto">
         {showWelcomeMessage ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 pt-20">
-             <h1 className="text-4xl md:text-5xl font-bold text-center text-foreground/80">What's on your mind today?</h1>
+             <h1 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">What's on your mind today?</h1>
           </div>
         ) : (
           <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
