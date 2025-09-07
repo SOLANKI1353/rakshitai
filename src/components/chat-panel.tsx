@@ -211,6 +211,19 @@ const renderMessageContent = (content: string) => {
     );
 };
 
+const useAutosizeTextArea = (
+  textAreaRef: HTMLTextAreaElement | null,
+  value: string
+) => {
+  useEffect(() => {
+    if (textAreaRef) {
+      textAreaRef.style.height = "0px";
+      const scrollHeight = textAreaRef.scrollHeight;
+      textAreaRef.style.height = scrollHeight + "px";
+    }
+  }, [textAreaRef, value]);
+};
+
 
 export function ChatPanel({ conversations, activeConversationId, onNewMessage, onSelectConversation, speechLang }: ChatPanelProps) {
   const { toast } = useToast();
@@ -224,6 +237,9 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useAutosizeTextArea(textAreaRef.current, input);
   
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const messages = activeConversation?.messages || [];
@@ -638,9 +654,11 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                         className="hidden"
                     />
 
-                    <Input
+                    <Textarea
+                        ref={textAreaRef}
+                        rows={1}
                         placeholder={placeholderText}
-                        className="w-full resize-none rounded-full border-none bg-transparent shadow-none focus-visible:ring-0 text-base py-3"
+                        className="w-full resize-none rounded-full border-none bg-transparent shadow-none focus-visible:ring-0 text-base py-3 max-h-32"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -703,3 +721,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
