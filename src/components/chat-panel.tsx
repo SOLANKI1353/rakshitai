@@ -144,16 +144,18 @@ const CodeBlock = ({ children }: { children: string }) => {
           </code>
         </pre>
       </div>
-      <DialogContent className="max-w-4xl h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[80vh] p-0">
+        <DialogHeader className="p-6 pb-0">
             <DialogTitle>Code Preview</DialogTitle>
         </DialogHeader>
-        <iframe
-            srcDoc={getPreviewContent()}
-            title="Code Preview"
-            sandbox="allow-scripts"
-            className="w-full h-full border rounded-md"
-         />
+        <div className="p-6 pt-2 h-full">
+            <iframe
+                srcDoc={getPreviewContent()}
+                title="Code Preview"
+                sandbox="allow-scripts"
+                className="w-full h-full border rounded-md"
+            />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -558,19 +560,19 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
              <h1 className="text-3xl md:text-4xl font-bold text-center bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">What's on your mind today?</h1>
           </div>
         ) : (
-          <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
-            <ScrollArea className="h-full mb-4" ref={scrollAreaRef}>
-              <div className="space-y-6 pr-4 py-6">
+          <div className="w-full max-w-4xl mx-auto px-4">
+            <ScrollArea className="h-full" ref={scrollAreaRef}>
+              <div className="space-y-6 py-6 pr-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={cn(
-                      "flex items-start gap-3",
+                      "flex items-start gap-4 w-full",
                       message.role === "user" && "justify-end"
                     )}
                   >
                     {message.role === "assistant" && (
-                      <Avatar className="w-8 h-8 border-2 border-primary/20">
+                      <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
                         <AvatarFallback className="bg-primary/10">
                           <Bot className="w-5 h-5 text-primary" />
                         </AvatarFallback>
@@ -587,7 +589,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                       {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
                     </div>
                     {message.role === "user" && (
-                      <Avatar className="w-8 h-8">
+                      <Avatar className="w-8 h-8 flex-shrink-0">
                         <AvatarFallback className="bg-primary/10 text-primary">
                           <User className="w-5 h-5" />
                         </AvatarFallback>
@@ -596,8 +598,8 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex items-start gap-3">
-                    <Avatar className="w-8 h-8 border-2 border-primary/20">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
                       <AvatarFallback className="bg-primary/10">
                         <Bot className="w-5 h-5 text-primary" />
                       </AvatarFallback>
@@ -716,3 +718,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
