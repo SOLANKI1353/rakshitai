@@ -115,13 +115,13 @@ const CodeBlock = ({ children }: { children: string }) => {
 
   return (
     <Dialog>
-      <div className="my-4 rounded-lg border bg-secondary/50 dark:bg-black/20">
-        <div className="flex items-center justify-between rounded-t-lg bg-secondary/80 dark:bg-black/30 px-4 py-2">
-          <span className="text-xs font-semibold text-muted-foreground">{language}</span>
+      <div className="my-4 rounded-lg bg-black/70">
+        <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded-t-lg">
+          <span className="text-xs font-semibold text-zinc-400 uppercase">{language}</span>
           <div className="flex items-center gap-1">
              {canPreview && (
                  <DialogTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-7 w-7">
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400 hover:bg-zinc-700 hover:text-white">
                         <Eye className="h-4 w-4" />
                         <span className="sr-only">Preview</span>
                     </Button>
@@ -130,7 +130,7 @@ const CodeBlock = ({ children }: { children: string }) => {
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
+              className="h-7 w-7 text-zinc-400 hover:bg-zinc-700 hover:text-white"
               onClick={handleCopy}
             >
               {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
@@ -162,35 +162,19 @@ const CodeBlock = ({ children }: { children: string }) => {
 };
 
 const renderMessageContent = (content: string) => {
-  const codeBlockRegex = /(```[\s\S]*?```)/g;
-  const inlineCodeRegex = /(`[^`]+`)/g;
-
-  const parts = content.split(codeBlockRegex).filter(Boolean);
-
-  return parts.map((part, index) => {
-    if (part.startsWith('```')) {
-      return <CodeBlock key={index}>{part}</CodeBlock>;
-    }
-    
-    const inlineParts = part.split(inlineCodeRegex).filter(Boolean);
+    const codeBlockRegex = /(```[\s\S]*?```)/g;
+    const parts = content.split(codeBlockRegex).filter(Boolean);
+  
     return (
-        <div key={index} className="prose prose-sm dark:prose-invert prose-p:whitespace-pre-wrap">
-        {inlineParts.map((inlinePart, inlineIndex) => {
-            if (inlinePart.startsWith('`')) {
-            return (
-                <code
-                key={inlineIndex}
-                className="mx-1 rounded bg-secondary px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-secondary-foreground"
-                >
-                {inlinePart.slice(1, -1)}
-                </code>
-            );
+        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
+        {parts.map((part, index) => {
+            if (part.startsWith('```')) {
+            return <CodeBlock key={index}>{part}</CodeBlock>;
             }
-            return inlinePart;
+            return <p key={index}>{part}</p>;
         })}
         </div>
     );
-  });
 };
 
 
@@ -493,7 +477,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   
   const showWelcomeMessage = messages.length === 0 && !isLoading;
   
-  const placeholderText = file ? `File: ${file.name} - Type instructions...` : "Ask anything...";
+  const placeholderText = file ? `File: ${file.name} - Type instructions for the file...` : "Ask anything...";
 
 
   return (
@@ -508,11 +492,10 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
             <ScrollArea className="h-full" ref={scrollAreaRef}>
               <div className="space-y-6 py-6 pr-4">
                 {messages.map((message) => (
-                  <div key={message.id} className={cn("w-full flex", message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                  <div key={message.id} className="w-full flex">
                       <div
                         className={cn(
-                          "flex items-start gap-4 max-w-3xl",
-                          message.role === "user" && "flex-row-reverse"
+                          "flex items-start gap-4 w-full"
                         )}
                       >
                         {message.role === "assistant" ? (
@@ -530,10 +513,8 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                         )}
                         <div
                           className={cn(
-                            "rounded-lg px-4 py-3 shadow-md",
-                            message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-card"
+                            "rounded-lg flex-1",
+                             message.role === "user" && "font-semibold"
                           )}
                         >
                           {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
@@ -688,3 +669,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
