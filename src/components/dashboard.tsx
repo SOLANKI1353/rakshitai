@@ -242,6 +242,7 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => setIsHistoryPanelOpen(true)}>
                 <MessageSquare className="h-5 w-5" />
             </Button>
+            <h1 className="text-lg font-semibold text-foreground">Rakshit AI</h1>
             <SettingsMenu onLogout={handleLogout} speechLang={speechLang} onSpeechLangChange={handleSpeechLangChange} />
         </header>
 
@@ -300,4 +301,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
