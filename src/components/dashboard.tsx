@@ -302,7 +302,7 @@ export default function Dashboard() {
         
       <main className="flex-1 flex flex-col justify-center items-center">
           <ChatPanel
-            key={activeConversationId || "new"}
+            key={activeConversationId || 'new'}
             conversations={conversations}
             activeConversationId={activeConversationId}
             onNewMessage={handleNewMessage}
