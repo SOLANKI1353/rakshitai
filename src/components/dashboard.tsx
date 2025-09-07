@@ -11,24 +11,13 @@ import {
   Monitor,
   Trash2,
   Plus,
+  Settings2,
+  ChevronLeft,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { ChatPanel, Message } from "@/components/chat-panel";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -37,29 +26,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { 
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
 import { Label } from "./ui/label";
-import { ScrollArea } from "./ui/scroll-area";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import {
   Select,
   SelectContent,
@@ -67,6 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "./ui/scroll-area";
 
 
 export type Conversation = {
@@ -128,66 +99,35 @@ function LanguageSelector({ value, onValueChange }: { value: string, onValueChan
     );
 }
 
-function SettingsDialog({ speechLang, onSpeechLangChange }: { speechLang: string, onSpeechLangChange: (lang: string) => void }) {
-    return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Settings</DialogTitle>
-                <DialogDescription>
-                    Customize the application's appearance and other settings.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label>Theme</Label>
+
+function SettingsMenu({ onLogout, speechLang, onSpeechLangChange }: { onLogout: () => void, speechLang: string, onSpeechLangChange: (lang: string) => void }) {
+  return (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+                <Settings2 className="h-5 w-5" />
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64" align="end">
+            <DropdownMenuLabel>Settings</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="p-2 space-y-4">
+                 <div className="space-y-2">
+                    <Label className="text-sm font-normal text-muted-foreground">Theme</Label>
                     <ThemeToggleButtons />
                 </div>
                  <div className="space-y-2">
-                    <Label>Speech Language</Label>
+                    <Label className="text-sm font-normal text-muted-foreground">Speech Language</Label>
                     <LanguageSelector value={speechLang} onValueChange={onSpeechLangChange} />
                 </div>
             </div>
-      </DialogContent>
-    )
-}
-
-function UserMenu({ onLogout, speechLang, onSpeechLangChange }: { onLogout: () => void, speechLang: string, onSpeechLangChange: (lang: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-full justify-start gap-2 px-2 text-sm h-10">
-            <Avatar className="h-8 w-8 border-2 border-primary/50">
-              <AvatarFallback className="bg-primary/10">R</AvatarFallback>
-            </Avatar>
-            <span className="truncate">Rakshit</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">Rakshit</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                rakshit@example.com
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
             </DropdownMenuItem>
-          </DialogTrigger>
-          <DropdownMenuItem onClick={onLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
-      <SettingsDialog speechLang={speechLang} onSpeechLangChange={onSpeechLangChange} />
-    </Dialog>
+    </DropdownMenu>
   );
 }
 
@@ -197,6 +137,7 @@ export default function Dashboard() {
   const [speechLang, setSpeechLang] = useState("en-US");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
 
   // Load conversations from localStorage on initial render
   useEffect(() => {
@@ -206,9 +147,10 @@ export default function Dashboard() {
             const parsed = JSON.parse(savedConversations);
             setConversations(parsed);
             if (parsed.length > 0) {
-                 // Get the most recent conversation and set it as active
-                const sorted = [...parsed].sort((a, b) => b.timestamp - a.timestamp);
-                setActiveConversationId(sorted[0].id);
+                 const sorted = [...parsed].sort((a, b) => b.timestamp - a.timestamp);
+                 if(!activeConversationId) {
+                    setActiveConversationId(sorted[0].id);
+                 }
             }
         }
         const savedLang = localStorage.getItem("rakshit-ai-speech-lang");
@@ -240,18 +182,20 @@ export default function Dashboard() {
   
   const handleNewChat = () => {
     setActiveConversationId(null);
+    setIsHistoryPanelOpen(false);
   };
 
   const handleSelectConversation = (id: string) => {
     setActiveConversationId(id);
+    setIsHistoryPanelOpen(false);
   };
   
   const handleDeleteConversation = (id: string) => {
     setConversations(prev => {
         const newConversations = prev.filter(c => c.id !== id);
-        // If the active conversation is deleted, start a new chat
         if (activeConversationId === id) {
-            setActiveConversationId(null);
+            const sorted = [...newConversations].sort((a, b) => b.timestamp - a.timestamp);
+            setActiveConversationId(sorted.length > 0 ? sorted[0].id : null);
         }
         return newConversations;
     });
@@ -290,84 +234,70 @@ export default function Dashboard() {
     router.push("/login");
   };
   
-  const activeConversation = conversations.find(c => c.id === activeConversationId);
   const sortedConversations = [...conversations].sort((a,b) => b.timestamp - a.timestamp);
 
   return (
-    <div className="bg-background min-h-screen">
-      <SidebarProvider>
-        <Sidebar collapsible="icon" side="left" variant="sidebar" className="border-r-0 md:border-r">
-          <SidebarHeader>
-            <div className="flex items-center gap-2">
-              <Bot className="size-7 text-primary" />
-              <h1 className="text-xl font-bold">Rakshit.AI</h1>
+    <div className="bg-background min-h-screen flex flex-col relative">
+        <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
+            <Button variant="ghost" size="icon" onClick={() => setIsHistoryPanelOpen(true)}>
+                <MessageSquare className="h-5 w-5" />
+            </Button>
+            <SettingsMenu onLogout={handleLogout} speechLang={speechLang} onSpeechLangChange={handleSpeechLangChange} />
+        </header>
+
+         {isHistoryPanelOpen && (
+            <div className="absolute top-0 left-0 bottom-0 w-80 bg-card/80 backdrop-blur-sm border-r z-20 flex flex-col animate-in slide-in-from-left-full duration-300">
+                <div className="p-4 flex items-center justify-between border-b">
+                     <h2 className="text-lg font-semibold">History</h2>
+                     <Button variant="ghost" size="icon" onClick={() => setIsHistoryPanelOpen(false)}>
+                         <ChevronLeft className="h-5 w-5"/>
+                     </Button>
+                </div>
+                <div className="p-2">
+                    <Button variant="outline" className="w-full" onClick={handleNewChat}>
+                        <Plus className="mr-2 h-4 w-4" /> New Chat
+                    </Button>
+                </div>
+                <ScrollArea className="flex-1">
+                    <div className="p-2 space-y-1">
+                        {sortedConversations.map(convo => (
+                             <div key={convo.id} className="relative group">
+                                <Button
+                                    variant={convo.id === activeConversationId ? 'secondary' : 'ghost'}
+                                    className="w-full justify-start truncate"
+                                    onClick={() => handleSelectConversation(convo.id)}
+                                >
+                                    {convo.title}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteConversation(convo.id);
+                                    }}
+                                >
+                                    <Trash2 className="w-4 h-4"/>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
             </div>
-          </SidebarHeader>
-          <SidebarContent className="p-0">
-             <div className="p-2">
-                 <Button variant="outline" className="w-full justify-start gap-2" onClick={handleNewChat}>
-                    <Plus className="w-4 h-4" />
-                    <span className="truncate">New Chat</span>
-                </Button>
-            </div>
-            <ScrollArea className="h-full px-2">
-                <SidebarMenu>
-                    {sortedConversations.map(convo => (
-                        <SidebarMenuItem key={convo.id}>
-                            <SidebarMenuButton
-                                isActive={convo.id === activeConversationId}
-                                onClick={() => handleSelectConversation(convo.id)}
-                                className="h-auto py-2"
-                            >
-                                <div className="flex-1 truncate text-left">{convo.title}</div>
-                            </SidebarMenuButton>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-50 hover:opacity-100">
-                                        <Trash2 className="w-4 h-4"/>
-                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete this conversation.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteConversation(convo.id)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-            </ScrollArea>
-          </SidebarContent>
-          <SidebarFooter className="mt-auto p-2 space-y-1">
-            <UserMenu onLogout={handleLogout} speechLang={speechLang} onSpeechLangChange={handleSpeechLangChange} />
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>
-             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:hidden">
-                <SidebarTrigger />
-                <h1 className="text-lg font-semibold truncate flex-1 text-center pr-8">
-                  {activeConversation ? activeConversation.title : "Rakshit.AI"}
-                </h1>
-            </header>
-          <main className="h-screen max-h-screen overflow-y-auto">
-              <ChatPanel
-                key={activeConversationId || "new"}
-                messages={activeConversation?.messages || []}
-                onNewMessage={handleNewMessage}
-                speechLang={speechLang}
-              />
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+        )}
+        
+      <main className="flex-1 flex flex-col justify-center items-center">
+          <ChatPanel
+            key={activeConversationId || "new"}
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onNewMessage={handleNewMessage}
+            onSelectConversation={handleSelectConversation}
+            speechLang={speechLang}
+          />
+      </main>
     </div>
   );
 }
 
-    
