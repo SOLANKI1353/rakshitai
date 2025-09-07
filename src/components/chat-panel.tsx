@@ -602,7 +602,7 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
         </div>
 
       <audio ref={audioRef} className="hidden" />
-      <div className="w-full max-w-4xl mx-auto p-4 md:p-6 lg:p-8 pt-0">
+       <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pb-4">
         <div className="relative">
             {file && (
             <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
@@ -652,123 +652,118 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                 </CardContent>
             </Card>
             )}
-            <form
-            className="relative"
-            onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-            }}
-            >
-            <Textarea
-                placeholder={file ? "Provide instructions for the attached file..." : "Ask me anything or attach a file..."}
-                className="min-h-[52px] rounded-2xl resize-none p-4 pr-48 border-border bg-card shadow-lg"
-                value={file ? (fileInstructions || input) : input}
-                onChange={(e) => {
-                if (file) {
-                    setInput(e.target.value);
-                    setFileInstructions(e.target.value);
-                } else {
-                    setInput(e.target.value)
-                }
-                }}
-                onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (file) {
-                        handleFileSubmit();
-                    } else {
-                        handleSendMessage();
-                    }
-                }
-                }}
-                disabled={isLoading || isRecording}
-            />
-            <div className="absolute top-1/2 -translate-y-1/2 right-4 flex items-center gap-2">
-                <div className="flex items-center gap-1 border-r pr-2 mr-1">
-                    <Switch
-                        id="tts-switch"
-                        checked={isTtsEnabled}
-                        onCheckedChange={setIsTtsEnabled}
-                        aria-label="Toggle text-to-speech"
-                        className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
-                    />
-                    <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
-                        {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
-                    </Label>
-                </div>
-                <Button
-                type="button"
-                size="icon"
-                variant={isRecording ? "destructive" : "ghost"}
-                onClick={toggleRecording}
-                disabled={isLoading || !!file}
-                aria-label={isRecording ? "Stop recording" : "Start recording"}
+            <div className="relative flex w-full items-center">
+                <form
+                    className="flex-1"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (file) handleFileSubmit(); else handleSendMessage();
+                    }}
                 >
-                <Mic className="h-5 w-5" />
-                </Button>
-                
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                         <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            disabled={isLoading}
-                            aria-label="Attach file"
+                    <div className="relative rounded-full border bg-card shadow-lg">
+                        <Textarea
+                            placeholder={file ? "Provide instructions..." : "Ask me anything..."}
+                            className="min-h-[56px] w-full resize-none rounded-full border-none bg-transparent p-4 pr-44 shadow-none focus-visible:ring-0"
+                            value={file ? (fileInstructions || input) : input}
+                            onChange={(e) => file ? setFileInstructions(e.target.value) : setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (file) handleFileSubmit(); else handleSendMessage();
+                                }
+                            }}
+                            disabled={isLoading || isRecording}
+                            rows={1}
+                        />
+                        <div className="absolute bottom-3 right-4 flex items-center gap-2">
+                             <div className="flex items-center gap-1 border-r pr-2 mr-1">
+                                <Switch
+                                    id="tts-switch"
+                                    checked={isTtsEnabled}
+                                    onCheckedChange={setIsTtsEnabled}
+                                    aria-label="Toggle text-to-speech"
+                                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
+                                />
+                                <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
+                                    {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
+                                </Label>
+                            </div>
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant={isRecording ? "destructive" : "ghost"}
+                                onClick={toggleRecording}
+                                disabled={isLoading || !!file}
+                                aria-label={isRecording ? "Stop recording" : "Start recording"}
+                                className="h-9 w-9"
                             >
-                            <Paperclip className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="mb-2 w-56">
-                        <DropdownMenuLabel>Attach</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                            <File className="mr-2 h-4 w-4" />
-                            <span>Add photos & files</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem disabled>
-                            <Search className="mr-2 h-4 w-4" />
-                            <span>Web search</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem disabled>
-                             <PenSquare className="mr-2 h-4 w-4" />
-                            <span>Canvas</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuLabel>Connect</DropdownMenuLabel>
-                             <DropdownMenuItem disabled>
-                                <Globe className="mr-2 h-4 w-4" />
-                                <span>Google Drive</span>
-                             </DropdownMenuItem>
-                             <DropdownMenuItem disabled>
-                                <Globe className="mr-2 h-4 w-4" />
-                                <span>OneDrive</span>
-                             </DropdownMenuItem>
-                             <DropdownMenuItem disabled>
-                                <Globe className="mr-2 h-4 w-4" />
-                                <span>Sharepoint</span>
-                             </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                />
-                <Button
-                type="submit"
-                size="icon"
-                disabled={isLoading || (!input.trim() && !file)}
-                aria-label="Send message"
-                >
-                <Send className="h-5 w-5" />
-                </Button>
+                                <Mic className="h-5 w-5" />
+                            </Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        disabled={isLoading}
+                                        aria-label="Attach file"
+                                        className="h-9 w-9"
+                                    >
+                                        <Paperclip className="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="mb-2 w-56">
+                                    <DropdownMenuLabel>Attach</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                                        <File className="mr-2 h-4 w-4" />
+                                        <span>Add photos & files</span>
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem disabled>
+                                        <Search className="mr-2 h-4 w-4" />
+                                        <span>Web search</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem disabled>
+                                        <PenSquare className="mr-2 h-4 w-4" />
+                                        <span>Canvas</span>
+                                    </DropdownMenuItem>
+                                     <DropdownMenuSeparator />
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuLabel>Connect</DropdownMenuLabel>
+                                        <DropdownMenuItem disabled>
+                                            <Globe className="mr-2 h-4 w-4" />
+                                            <span>Google Drive</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem disabled>
+                                            <Globe className="mr-2 h-4 w-4" />
+                                            <span>OneDrive</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem disabled>
+                                            <Globe className="mr-2 h-4 w-4" />
+                                            <span>Sharepoint</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                             <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                            <Button
+                                type="submit"
+                                size="icon"
+                                disabled={isLoading || (!input.trim() && !file)}
+                                aria-label="Send message"
+                                className="h-9 w-9"
+                            >
+                                <Send className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            </form>
         </div>
       </div>
     </div>
