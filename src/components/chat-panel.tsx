@@ -567,7 +567,11 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                 className="flex-1"
                 onSubmit={(e) => {
                     e.preventDefault();
-                    if (file) handleFileSubmit(); else handleSendMessage();
+                    if (file) {
+                        handleFileSubmit();
+                    } else {
+                        handleSendMessage();
+                    }
                 }}
             >
                 <div className="relative rounded-full border bg-card shadow-lg flex items-center">
@@ -627,7 +631,11 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
-                                if (file) handleFileSubmit(); else handleSendMessage();
+                                if (file) {
+                                    handleFileSubmit();
+                                } else {
+                                    handleSendMessage();
+                                }
                             }
                         }}
                         disabled={isLoading || isRecording}
@@ -680,5 +688,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
-
-    
