@@ -564,50 +564,52 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
             <ScrollArea className="h-full" ref={scrollAreaRef}>
               <div className="space-y-6 py-6 pr-4">
                 {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex items-start gap-4 w-full",
-                      message.role === "user" && "justify-end"
-                    )}
-                  >
-                    {message.role === "assistant" && (
-                      <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
-                        <AvatarFallback className="bg-primary/10">
-                          <Bot className="w-5 h-5 text-primary" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-3xl rounded-lg px-4 py-3 shadow-md",
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card"
-                      )}
-                    >
-                      {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
-                    </div>
-                    {message.role === "user" && (
-                      <Avatar className="w-8 h-8 flex-shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          <User className="w-5 h-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
+                  <div key={message.id} className={cn("w-full flex", message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                      <div
+                        className={cn(
+                          "flex items-start gap-4 max-w-3xl",
+                          message.role === "user" && "flex-row-reverse"
+                        )}
+                      >
+                        {message.role === "assistant" ? (
+                          <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10">
+                              <Bot className="w-5 h-5 text-primary" />
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                           <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              <User className="w-5 h-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={cn(
+                            "rounded-lg px-4 py-3 shadow-md",
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-card"
+                          )}
+                        >
+                          {message.role === 'assistant' ? renderMessageContent(message.content) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
+                        </div>
+                      </div>
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
-                      <AvatarFallback className="bg-primary/10">
-                        <Bot className="w-5 h-5 text-primary" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    </div>
-                  </div>
+                   <div className="w-full flex justify-start">
+                        <div className="flex items-start gap-4 max-w-3xl">
+                             <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
+                                <AvatarFallback className="bg-primary/10">
+                                    <Bot className="w-5 h-5 text-primary" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            </div>
+                        </div>
+                   </div>
                 )}
               </div>
             </ScrollArea>
@@ -718,5 +720,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
-
-    
