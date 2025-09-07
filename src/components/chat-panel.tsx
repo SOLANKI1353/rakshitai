@@ -602,7 +602,7 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
         </div>
 
       <audio ref={audioRef} className="hidden" />
-       <div className="w-full max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pb-4">
+       <div className="w-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-4">
         <div className="relative">
             {file && (
             <Card className="absolute bottom-full mb-2 w-full shadow-lg animate-in fade-in-0 zoom-in-95 bg-card border-border">
@@ -677,14 +677,14 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
                         />
                         <div className="absolute bottom-3 right-4 flex items-center gap-2">
                              <div className="flex items-center gap-1 border-r pr-2 mr-1">
-                                <Switch
-                                    id="tts-switch"
-                                    checked={isTtsEnabled}
-                                    onCheckedChange={setIsTtsEnabled}
-                                    aria-label="Toggle text-to-speech"
-                                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input w-9 h-5"
-                                />
-                                <Label htmlFor="tts-switch" className="text-muted-foreground cursor-pointer">
+                                <Label htmlFor="tts-switch" className="flex items-center gap-1 cursor-pointer">
+                                    <Switch
+                                        id="tts-switch"
+                                        checked={isTtsEnabled}
+                                        onCheckedChange={setIsTtsEnabled}
+                                        aria-label="Toggle text-to-speech"
+                                        className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
+                                    />
                                     {isTtsEnabled ? <Volume2 className="w-5 h-5"/> : <VolumeX className="w-5 h-5"/>}
                                 </Label>
                             </div>
