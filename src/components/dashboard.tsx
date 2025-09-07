@@ -26,7 +26,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "./ui/label";
 import {
@@ -36,6 +35,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
 
@@ -203,11 +209,13 @@ export default function Dashboard() {
 
   const handleNewMessage = (newMessage: Message, isUserMessage: boolean) => {
     setConversations(prev => {
-      let activeId = activeConversationId;
-      if (activeId) {
-        // Add message to an existing conversation
-        return prev.map(c => 
-          c.id === activeId 
+      // Check if there is an active conversation
+      const currentConversation = prev.find(c => c.id === activeConversationId);
+
+      if (currentConversation) {
+        // Add message to the existing active conversation
+        return prev.map(c =>
+          c.id === activeConversationId
             ? { ...c, messages: [...c.messages, newMessage], timestamp: Date.now() }
             : c
         );
@@ -220,6 +228,7 @@ export default function Dashboard() {
           messages: [newMessage],
           timestamp: Date.now(),
         };
+        // Set the new conversation as active
         setActiveConversationId(newConversation.id);
         return [newConversation, ...prev];
       }
