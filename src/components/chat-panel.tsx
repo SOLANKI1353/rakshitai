@@ -669,5 +669,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
-
-    
