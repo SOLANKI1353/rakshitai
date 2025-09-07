@@ -770,3 +770,5 @@ export function ChatPanel({ messages, onNewMessage, speechLang }: ChatPanelProps
     </div>
   );
 }
+
+    

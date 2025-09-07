@@ -152,8 +152,9 @@ function SettingsDialog({ speechLang, onSpeechLangChange }: { speechLang: string
 }
 
 function UserMenu({ onLogout, speechLang, onSpeechLangChange }: { onLogout: () => void, speechLang: string, onSpeechLangChange: (lang: string) => void }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="w-full justify-start gap-2 px-2 text-sm h-10">
@@ -368,3 +369,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
