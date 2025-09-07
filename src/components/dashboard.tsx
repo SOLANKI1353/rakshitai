@@ -209,29 +209,30 @@ export default function Dashboard() {
 
   const handleNewMessage = (newMessage: Message, isUserMessage: boolean) => {
     setConversations(prev => {
-      // Check if there is an active conversation
-      const currentConversation = prev.find(c => c.id === activeConversationId);
+        // Check if there is an active conversation
+        if (activeConversationId) {
+            const conversationExists = prev.some(c => c.id === activeConversationId);
+            if (conversationExists) {
+                // Add message to the existing active conversation
+                return prev.map(c =>
+                    c.id === activeConversationId
+                        ? { ...c, messages: [...c.messages, newMessage], timestamp: Date.now() }
+                        : c
+                );
+            }
+        }
 
-      if (currentConversation) {
-        // Add message to the existing active conversation
-        return prev.map(c =>
-          c.id === activeConversationId
-            ? { ...c, messages: [...c.messages, newMessage], timestamp: Date.now() }
-            : c
-        );
-      } else {
-        // Start a new conversation
+        // If no active conversation or it doesn't exist, start a new one
         const conversationTitle = newMessage.content.substring(0, 30);
         const newConversation: Conversation = {
-          id: Date.now().toString(),
-          title: isUserMessage ? `${conversationTitle}...` : "New Chat",
-          messages: [newMessage],
-          timestamp: Date.now(),
+            id: Date.now().toString(),
+            title: isUserMessage ? `${conversationTitle}...` : "New Chat",
+            messages: [newMessage],
+            timestamp: Date.now(),
         };
         // Set the new conversation as active
         setActiveConversationId(newConversation.id);
         return [newConversation, ...prev];
-      }
     });
   };
 
