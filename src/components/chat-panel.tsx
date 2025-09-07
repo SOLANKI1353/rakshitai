@@ -551,6 +551,18 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   const isFileSubmitDisabled = isLoading || !file || !(fileInstructions.trim() || input.trim());
   
   const showWelcomeMessage = messages.length === 0 && !isLoading;
+  
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (file) {
+      setFileInstructions(e.target.value);
+    } else {
+      setInput(e.target.value);
+    }
+  };
+
+  const currentInputValue = file ? fileInstructions : input;
+  const placeholderText = file ? `Type instructions for ${file.name}...` : "Ask anything...";
+
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -676,10 +688,10 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                     />
 
                     <Input
-                        placeholder="Ask anything..."
+                        placeholder={placeholderText}
                         className="w-full resize-none rounded-full border-none bg-transparent shadow-none focus-visible:ring-0 text-base py-3"
-                        value={file ? (fileInstructions || input) : input}
-                        onChange={(e) => file ? setFileInstructions(e.target.value) : setInput(e.target.value)}
+                        value={currentInputValue}
+                        onChange={handleInputChange}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
@@ -690,6 +702,23 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                     />
 
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                         {file && (
+                           <Button 
+                             type="button" 
+                             size="icon" 
+                             variant="ghost" 
+                             className="h-9 w-9" 
+                             onClick={() => {
+                                setFile(null);
+                                setFileDataUri(null);
+                                setFileInstructions("");
+                                if(fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                           >
+                             <X className="h-5 w-5" />
+                             <span className="sr-only">Remove file</span>
+                           </Button>
+                         )}
                         <Button
                             type="button"
                             size="icon"
@@ -720,3 +749,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
