@@ -8,3 +8,4 @@ import '@/ai/flows/respond-in-preferred-language.ts';
 import '@/ai/flows/generate-text-with-chat-gpt.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/apk-builder-agent.ts';
+import '@/ai/flows/github-agent.ts';
