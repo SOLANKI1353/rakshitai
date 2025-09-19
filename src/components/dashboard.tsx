@@ -248,7 +248,7 @@ export default function Dashboard() {
 
   return (
     <div className="bg-background min-h-screen flex flex-col relative">
-        <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
+        <header className="sticky top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-background/80 backdrop-blur-sm">
             <Button variant="ghost" size="icon" onClick={() => setIsHistoryPanelOpen(true)}>
                 <MessageSquare className="h-5 w-5" />
             </Button>
