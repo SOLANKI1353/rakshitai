@@ -80,6 +80,8 @@ type ChatPanelProps = {
   onNewMessage: (newMessage: Message, isUserMessage: boolean) => void;
   onSelectConversation: (id: string) => void;
   speechLang: string;
+  input: string;
+  setInput: (value: string) => void;
 }
 
 const CodeBlock = ({ children }: { children: string }) => {
@@ -175,9 +177,8 @@ const useAutosizeTextArea = (
 };
 
 
-export function ChatPanel({ conversations, activeConversationId, onNewMessage, onSelectConversation, speechLang }: ChatPanelProps) {
+export function ChatPanel({ conversations, activeConversationId, onNewMessage, onSelectConversation, speechLang, input, setInput }: ChatPanelProps) {
   const { toast } = useToast();
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -295,7 +296,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     } else {
       console.warn("Speech Recognition not supported in this browser.");
     }
-  }, [toast, speechLang]);
+  }, [toast, speechLang, setInput]);
   
    const handlePlayAudio = async (messageId: string, text: string) => {
     if (currentlyPlaying === messageId) {
@@ -775,4 +776,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   );
 }
 
-    
