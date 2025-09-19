@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   ThumbsUp,
   ThumbsDown,
+  Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,6 +59,7 @@ import { analyzeUploadedFile } from "@/ai/flows/analyze-uploaded-file";
 import { apkBuilderAgent } from "@/ai/flows/apk-builder-agent";
 import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { generateTextWithChatGPT } from "@/ai/flows/generate-text-with-chat-gpt";
+import { githubAgent } from "@/ai/flows/github-agent";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Conversation } from "./dashboard";
@@ -112,6 +114,8 @@ const CodeBlock = ({ children }: { children: string }) => {
       return `<style>${code}</style>`;
     }
     if (['javascript', 'js'].includes(language.toLowerCase())) {
+        // Sandboxing will prevent top-level script execution, but inline event handlers might work.
+        // For security, it's safer to not execute arbitrary JS directly unless sandboxed properly.
         return `<script>${code}<\/script>`;
     }
     return '';
@@ -156,7 +160,7 @@ const CodeBlock = ({ children }: { children: string }) => {
             <iframe
                 srcDoc={getPreviewContent()}
                 title="Code Preview"
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
                 className="w-full h-full border rounded-md"
             />
         </div>
@@ -460,8 +464,9 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
 
     try {
       let responseText = "";
-      
-      if (finalInstructions.toLowerCase().includes("apk")) {
+      const lowerInstructions = finalInstructions.toLowerCase();
+
+      if (lowerInstructions.includes("apk")) {
         const result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
           instructions: finalInstructions,
@@ -470,7 +475,19 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
             ? result.guidance
             : `Sorry, I can't convert this project. ${result.guidance}`;
 
-      } else {
+      } else if (lowerInstructions.includes("github")) {
+            // Extract repo name from instructions, e.g., "publish to 'my-repo'"
+            const repoNameMatch = finalInstructions.match(/['"](.*?)['"]/);
+            const repoName = repoNameMatch ? repoNameMatch[1] : `new-project-${Date.now()}`;
+
+            const result = await githubAgent({
+                projectZipDataUri: currentFileDataUri,
+                repoName: repoName,
+                repoDescription: `Project uploaded via RakshitAI: ${currentFile.name}`,
+            });
+            responseText = result.message;
+      }
+      else {
         const result = await analyzeUploadedFile({
           fileDataUri: currentFileDataUri,
           fileType: currentFile.type,
@@ -478,6 +495,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
         });
         responseText = result.analysisResult;
       }
+
        const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -669,23 +687,27 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                                 <span>Add photos & files</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem disabled>
+                                <Github className="mr-2 h-4 w-4" />
+                                <span>Publish to GitHub</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
                                 <BookOpen className="mr-2 h-4 w-4" />
                                 <span>Study and learn</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem>
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Create image</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem>
                                 <Sparkles className="mr-2 h-4 w-4" />
                                 <span>Think longer</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem>
                                 <FlaskConical className="mr-2 h-4 w-4" />
                                 <span>Deep research</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                             <DropdownMenuItem disabled>
+                             <DropdownMenuItem>
                                 <MoreHorizontal className="mr-2 h-4 w-4" />
                                 <span>More</span>
                             </DropdownMenuItem>
@@ -765,5 +787,3 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
-
-    
