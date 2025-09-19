@@ -140,6 +140,7 @@ function SettingsMenu({ onLogout, speechLang, onSpeechLangChange }: { onLogout: 
 
 export default function Dashboard() {
   const router = useRouter();
+  const [input, setInput] = useState("");
   const [speechLang, setSpeechLang] = useState("en-US");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -166,7 +167,7 @@ export default function Dashboard() {
     } catch (error) {
         console.error("Failed to load from localStorage", error);
     }
-  }, []);
+  }, [activeConversationId]);
 
   // Save conversations to localStorage whenever they change
   useEffect(() => {
@@ -188,11 +189,13 @@ export default function Dashboard() {
   
   const handleNewChat = () => {
     setActiveConversationId(null);
+    setInput("");
     setIsHistoryPanelOpen(false);
   };
 
   const handleSelectConversation = (id: string) => {
     setActiveConversationId(id);
+    setInput("");
     setIsHistoryPanelOpen(false);
   };
   
@@ -302,12 +305,14 @@ export default function Dashboard() {
         
       <main className="flex-1 flex flex-col justify-center items-center">
           <ChatPanel
-            key={activeConversationId || 'new'}
+            key={activeConversationId || "new"}
             conversations={conversations}
             activeConversationId={activeConversationId}
             onNewMessage={handleNewMessage}
             onSelectConversation={handleSelectConversation}
             speechLang={speechLang}
+            input={input}
+            setInput={setInput}
           />
       </main>
     </div>
