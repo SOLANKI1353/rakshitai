@@ -25,7 +25,9 @@ import {
   Sparkles,
   FlaskConical,
   MoreHorizontal,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -309,7 +311,9 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       setAudioLoading(messageId);
       setCurrentlyPlaying(null);
       
-      const { media } = await textToSpeech(text);
+      const result = await textToSpeech(text);
+      const media = result.media;
+
 
       if (audioRef.current && media) {
         audioRef.current.src = media;
@@ -551,18 +555,18 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     };
   
     return (
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
+      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:whitespace-pre-wrap">
         {parts.map((part, index) => {
             if (part.startsWith('```')) {
                 return <CodeBlock key={index}>{part}</CodeBlock>;
             }
             return <div key={index}>{parseMarkdown(part)}</div>;
         })}
-         <div className="mt-2 -ml-2">
+         <div className="mt-2 -ml-2 flex items-center gap-2 text-muted-foreground">
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground"
+                className="h-8 w-8"
                 onClick={() => handlePlayAudio(messageId, content)}
                 disabled={audioLoading !== null}
             >
@@ -574,8 +578,11 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                     <Volume2 className="h-4 w-4" />
                 )}
             </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><Copy className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><ThumbsUp className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"><ThumbsDown className="h-4 w-4" /></Button>
         </div>
-        </div>
+      </div>
     );
 };
   
@@ -594,49 +601,32 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
         ) : (
           <div className="w-full max-w-4xl mx-auto px-4">
             <ScrollArea className="h-full" ref={scrollAreaRef}>
-              <div className="space-y-6 py-6 pr-4">
+              <div className="space-y-8 py-6 pr-4">
                 {messages.map((message) => (
-                  <div key={message.id} className="w-full flex">
-                      <div
-                        className={cn(
-                          "flex items-start gap-4 w-full"
-                        )}
-                      >
-                        {message.role === "assistant" ? (
-                          <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
-                            <AvatarFallback className="bg-primary/10">
-                              <Bot className="w-5 h-5 text-primary" />
-                            </AvatarFallback>
-                          </Avatar>
-                        ) : (
-                           <Avatar className="w-8 h-8 flex-shrink-0">
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              <User className="w-5 h-5" />
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={cn(
-                            "rounded-lg flex-1",
-                             message.role === "user" && "font-semibold"
-                          )}
-                        >
-                          {message.role === 'assistant' ? renderMessageContent(message.content, message.id) : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
-                        </div>
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex items-start gap-4",
+                      message.role === "user" && "justify-end"
+                    )}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="flex-1 max-w-2xl">
+                          {renderMessageContent(message.content, message.id)}
                       </div>
+                    )}
+
+                    {message.role === "user" && (
+                      <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-lg">
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {isLoading && (
-                   <div className="w-full flex justify-start">
-                        <div className="flex items-start gap-4 max-w-3xl">
-                             <Avatar className="w-8 h-8 border-2 border-primary/20 flex-shrink-0">
-                                <AvatarFallback className="bg-primary/10">
-                                    <Bot className="w-5 h-5 text-primary" />
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="max-w-xl rounded-lg px-4 py-3 bg-card shadow-md flex items-center">
-                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                            </div>
+                   <div className="flex items-start gap-4 max-w-2xl">
+                        <div className="max-w-xl rounded-lg px-4 py-3 flex items-center">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
                         </div>
                    </div>
                 )}
@@ -776,3 +766,4 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
   );
 }
 
+    
