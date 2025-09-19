@@ -1,0 +1,393 @@
+
+'use client';
+
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Bot, Code, Play, Send, User, Loader2 } from 'lucide-react';
+import { generateTextWithChatGPT } from '@/ai/flows/generate-text-with-chat-gpt';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+type AICoderMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+};
+
+
+function AICoderPageContent() {
+    const searchParams = useSearchParams();
+    const initialCode = searchParams.get('code') || '';
+    const initialLang = searchParams.get('lang') || 'html';
+
+    const [code, setCode] = useState('');
+    const [lang, setLang] = useState('html');
+    const [previewKey, setPreviewKey] = useState(0);
+
+    const [messages, setMessages] = useState<AICoderMessage[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    
+    useEffect(() => {
+        try {
+            const decodedCode = decodeURIComponent(initialCode);
+            setCode(decodedCode);
+            setLang(initialLang);
+            setPreviewKey(prev => prev + 1);
+        } catch (e) {
+            console.error("Failed to decode code from URL", e);
+            setCode("<!-- Invalid code in URL -->");
+        }
+    }, [initialCode, initialLang]);
+
+
+    const handleRunCode = () => {
+        setPreviewKey(prev => prev + 1);
+    };
+    
+    const extractCode = (text: string) => {
+        const match = text.match(/```(?:\w+)?\n([\s\S]+)```/);
+        return match ? match[1] : text;
+    };
+
+    const handleSendMessage = async () => {
+        if (!input.trim()) return;
+
+        const userMessage: AICoderMessage = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMessage]);
+        setIsLoading(true);
+
+        // Construct a more specific prompt for the AI
+        const fullPrompt = `Based on the following code:\n\n\`\`\`${lang}\n${code}\n\`\`\`\n\nUser request: ${input}\n\nProvide only the complete, updated code block. Do not include any other explanations or text outside of the code block.`;
+
+        try {
+            const result = await generateTextWithChatGPT({ prompt: fullPrompt });
+            const newCode = extractCode(result.generatedText);
+            const assistantMessage: AICoderMessage = { role: 'assistant', content: result.generatedText };
+            
+            setCode(newCode); // Update the code in the editor
+            setMessages(prev => [...prev, assistantMessage]);
+            handleRunCode(); // Automatically refresh the preview
+
+        } catch (error) {
+            console.error('AI Error:', error);
+            const errorMessage: AICoderMessage = { role: 'assistant', content: "Sorry, I couldn't process that request." };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+            setInput('');
+        }
+    };
+    
+    const getPreviewContent = () => {
+        if (lang === 'html') {
+          return code;
+        }
+        if (lang === 'css') {
+          return `<style>${code}</style>`;
+        }
+        if (['javascript', 'js', 'jsx', 'tsx'].includes(lang)) {
+            // A more robust solution would involve a bundler like esbuild-wasm
+            // For now, this is a basic script execution.
+            return `<div id="root"></div><script type="module">${code.replace(/<\/script>/g, '<\\/script>')}<\/script>`;
+        }
+        return '<span>Unsupported language for preview.</span>';
+      }
+
+    return (
+        <div className="h-screen w-screen bg-background text-foreground flex flex-col">
+            <header className="h-14 flex items-center justify-between px-4 border-b shrink-0">
+                <div className="flex items-center gap-2">
+                    <Code className="h-6 w-6 text-primary" />
+                    <h1 className="text-xl font-bold">AI Coder</h1>
+                </div>
+                <Button onClick={handleRunCode}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Run
+                </Button>
+            </header>
+            <ResizablePanelGroup direction="horizontal" className="flex-1">
+                <ResizablePanel defaultSize={50}>
+                    <div className="h-full p-1">
+                        <Textarea
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="h-full w-full resize-none font-mono text-sm bg-zinc-900 text-white border-zinc-700 rounded-md"
+                            placeholder="Write or generate your code here..."
+                        />
+                    </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50}>
+                    <ResizablePanelGroup direction="vertical">
+                        <ResizablePanel defaultSize={60}>
+                            <div className="h-full p-1">
+                                <iframe
+                                    key={previewKey}
+                                    srcDoc={getPreviewContent()}
+                                    title="Code Preview"
+                                    sandbox="allow-scripts allow-same-origin"
+                                    className="w-full h-full border rounded-md bg-white"
+                                />
+                            </div>
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={40}>
+                            <div className="h-full flex flex-col p-1">
+                                <div className="flex-1 flex flex-col bg-card rounded-md border">
+                                    <ScrollArea className="flex-1 p-4">
+                                       <div className="space-y-4">
+                                            {messages.map((msg, i) => (
+                                                <div key={i} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : '')}>
+                                                   {msg.role === 'assistant' && <Bot className="h-5 w-5 shrink-0" />}
+                                                   <div className={cn("rounded-lg px-3 py-2 text-sm max-w-md", msg.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground')}>
+                                                       <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                                                   </div>
+                                                    {msg.role === 'user' && <User className="h-5 w-5 shrink-0" />}
+                                                </div>
+                                            ))}
+                                             {isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+                                       </div>
+                                    </ScrollArea>
+                                    <div className="p-2 border-t">
+                                        <div className="relative">
+                                            <Textarea
+                                                placeholder="Ask AI to edit the code..."
+                                                className="pr-16"
+                                                rows={1}
+                                                value={input}
+                                                onChange={(e) => setInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleSendMessage();
+                                                    }
+                                                }}
+                                            />
+                                            <Button size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleSendMessage} disabled={isLoading}>
+                                                <Send className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
+                </ResizablePanel>
+            </ResizablePanelGroup>
+        </div>
+    );
+}
+
+
+export default function AICoderPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+            <AICoderPageContent />
+        </Suspense>
+    )
+}
+
+    
+'use client';
+
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Bot, Code, Play, Send, User, Loader2 } from 'lucide-react';
+import { generateTextWithChatGPT } from '@/ai/flows/generate-text-with-chat-gpt';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+type AICoderMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+};
+
+
+function AICoderPageContent() {
+    const searchParams = useSearchParams();
+    const initialCode = searchParams.get('code') || '';
+    const initialLang = searchParams.get('lang') || 'html';
+
+    const [code, setCode] = useState('');
+    const [lang, setLang] = useState('html');
+    const [previewKey, setPreviewKey] = useState(0);
+
+    const [messages, setMessages] = useState<AICoderMessage[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    
+    useEffect(() => {
+        try {
+            const decodedCode = decodeURIComponent(initialCode);
+            setCode(decodedCode);
+            setLang(initialLang);
+            setPreviewKey(prev => prev + 1);
+        } catch (e) {
+            console.error("Failed to decode code from URL", e);
+            setCode("<!-- Invalid code in URL -->");
+        }
+    }, [initialCode, initialLang]);
+
+
+    const handleRunCode = () => {
+        setPreviewKey(prev => prev + 1);
+    };
+    
+    const extractCode = (text: string) => {
+        const match = text.match(/```(?:\w+)?\n([\s\S]+)```/);
+        return match ? match[1] : text;
+    };
+
+    const handleSendMessage = async () => {
+        if (!input.trim()) return;
+
+        const userMessage: AICoderMessage = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMessage]);
+        setIsLoading(true);
+
+        // Construct a more specific prompt for the AI
+        const fullPrompt = `Based on the following code:\n\n\`\`\`${lang}\n${code}\n\`\`\`\n\nUser request: ${input}\n\nProvide only the complete, updated code block. Do not include any other explanations or text outside of the code block.`;
+
+        try {
+            const result = await generateTextWithChatGPT({ prompt: fullPrompt });
+            const newCode = extractCode(result.generatedText);
+            const assistantMessage: AICoderMessage = { role: 'assistant', content: result.generatedText };
+            
+            setCode(newCode); // Update the code in the editor
+            setMessages(prev => [...prev, assistantMessage]);
+            handleRunCode(); // Automatically refresh the preview
+
+        } catch (error) {
+            console.error('AI Error:', error);
+            const errorMessage: AICoderMessage = { role: 'assistant', content: "Sorry, I couldn't process that request." };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+            setInput('');
+        }
+    };
+    
+    const getPreviewContent = () => {
+        if (lang === 'html') {
+          return code;
+        }
+        if (lang === 'css') {
+          return `<style>${code}</style>`;
+        }
+        if (['javascript', 'js', 'jsx', 'tsx'].includes(lang)) {
+            // A more robust solution would involve a bundler like esbuild-wasm
+            // For now, this is a basic script execution.
+            return `<div id="root"></div><script type="module">${code.replace(/<\/script>/g, '<\\/script>')}<\/script>`;
+        }
+        return '<span>Unsupported language for preview.</span>';
+      }
+
+    return (
+        <div className="h-screen w-screen bg-background text-foreground flex flex-col">
+            <header className="h-14 flex items-center justify-between px-4 border-b shrink-0">
+                <div className="flex items-center gap-2">
+                    <Code className="h-6 w-6 text-primary" />
+                    <h1 className="text-xl font-bold">AI Coder</h1>
+                </div>
+                <Button onClick={handleRunCode}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Run
+                </Button>
+            </header>
+            <ResizablePanelGroup direction="horizontal" className="flex-1">
+                <ResizablePanel defaultSize={50}>
+                    <div className="h-full p-1">
+                        <Textarea
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="h-full w-full resize-none font-mono text-sm bg-zinc-900 text-white border-zinc-700 rounded-md"
+                            placeholder="Write or generate your code here..."
+                        />
+                    </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50}>
+                    <ResizablePanelGroup direction="vertical">
+                        <ResizablePanel defaultSize={60}>
+                            <div className="h-full p-1">
+                                <iframe
+                                    key={previewKey}
+                                    srcDoc={getPreviewContent()}
+                                    title="Code Preview"
+                                    sandbox="allow-scripts allow-same-origin"
+                                    className="w-full h-full border rounded-md bg-white"
+                                />
+                            </div>
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={40}>
+                            <div className="h-full flex flex-col p-1">
+                                <div className="flex-1 flex flex-col bg-card rounded-md border">
+                                    <ScrollArea className="flex-1 p-4">
+                                       <div className="space-y-4">
+                                            {messages.map((msg, i) => (
+                                                <div key={i} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : '')}>
+                                                   {msg.role === 'assistant' && <Bot className="h-5 w-5 shrink-0" />}
+                                                   <div className={cn("rounded-lg px-3 py-2 text-sm max-w-md", msg.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground')}>
+                                                       <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                                                   </div>
+                                                    {msg.role === 'user' && <User className="h-5 w-5 shrink-0" />}
+                                                </div>
+                                            ))}
+                                             {isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+                                       </div>
+                                    </ScrollArea>
+                                    <div className="p-2 border-t">
+                                        <div className="relative">
+                                            <Textarea
+                                                placeholder="Ask AI to edit the code..."
+                                                className="pr-16"
+                                                rows={1}
+                                                value={input}
+                                                onChange={(e) => setInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleSendMessage();
+                                                    }
+                                                }}
+                                            />
+                                            <Button size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleSendMessage} disabled={isLoading}>
+                                                <Send className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
+                </ResizablePanel>
+            </ResizablePanelGroup>
+        </div>
+    );
+}
+
+
+export default function AICoderPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+            <AICoderPageContent />
+        </Suspense>
+    )
+}
+
+    
