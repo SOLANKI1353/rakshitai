@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
+import Link from 'next/link';
 import {
   Bot,
   CornerDownLeft,
@@ -29,11 +30,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   Github,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +64,7 @@ import { githubAgent } from "@/ai/flows/github-agent";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Conversation } from "./dashboard";
+import { runCodeInAiCoder } from "@/app/actions/run-code-in-ai-coder";
 
 export type Message = {
   id: string;
@@ -104,68 +106,51 @@ const CodeBlock = ({ children }: { children: string }) => {
     }
   };
   
-  const canPreview = ['html', 'javascript', 'js', 'css'].includes(language.toLowerCase());
-
-  const getPreviewContent = () => {
-    if (language.toLowerCase() === 'html') {
-      return code;
-    }
-    if (language.toLowerCase() === 'css') {
-      return `<style>${code}</style>`;
-    }
-    if (['javascript', 'js'].includes(language.toLowerCase())) {
-        // Sandboxing will prevent top-level script execution, but inline event handlers might work.
-        // For security, it's safer to not execute arbitrary JS directly unless sandboxed properly.
-        return `<script>${code}<\/script>`;
-    }
-    return '';
-  }
+  const canPreview = ['html', 'javascript', 'js', 'css', 'jsx', 'tsx'].includes(language.toLowerCase());
 
   return (
-    <Dialog>
-      <div className="my-4 rounded-lg bg-black/70">
-        <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded-t-lg">
-          <span className="text-xs font-semibold text-zinc-400 uppercase">{language}</span>
-          <div className="flex items-center gap-1">
-             {canPreview && (
-                 <DialogTrigger asChild>
+    <div className="my-4 rounded-lg bg-black/70">
+      <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded-t-lg">
+        <span className="text-xs font-semibold text-zinc-400 uppercase">{language}</span>
+        <div className="flex items-center gap-1">
+           {canPreview && (
+               <Link href={`/ai-coder?code=${encodeURIComponent(code)}&lang=${language}`} passHref legacyBehavior>
+                  <a target="_blank">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400 hover:bg-zinc-700 hover:text-white">
                         <Eye className="h-4 w-4" />
-                        <span className="sr-only">Preview</span>
+                        <span className="sr-only">Preview in AI Coder</span>
                     </Button>
-                 </DialogTrigger>
-             )}
+                  </a>
+               </Link>
+           )}
+          <form action={async () => runCodeInAiCoder(code, language)} >
             <Button
+              type="submit"
               size="icon"
               variant="ghost"
               className="h-7 w-7 text-zinc-400 hover:bg-zinc-700 hover:text-white"
-              onClick={handleCopy}
             >
-              {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-               <span className="sr-only">Copy code</span>
+              <Play className="h-4 w-4" />
+              <span className="sr-only">Run Code</span>
             </Button>
-          </div>
+          </form>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+            onClick={handleCopy}
+          >
+            {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+             <span className="sr-only">Copy code</span>
+          </Button>
         </div>
-        <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto" ref={codeRef}>
-          <code className={`language-${language}`}>
-            {code}
-          </code>
-        </pre>
       </div>
-      <DialogContent className="max-w-4xl h-[80vh] p-0">
-        <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Code Preview</DialogTitle>
-        </DialogHeader>
-        <div className="p-6 pt-2 h-full">
-            <iframe
-                srcDoc={getPreviewContent()}
-                title="Code Preview"
-                sandbox="allow-scripts allow-same-origin"
-                className="w-full h-full border rounded-md"
-            />
-        </div>
-      </DialogContent>
-    </Dialog>
+      <pre className="p-4 text-sm whitespace-pre-wrap overflow-x-auto" ref={codeRef}>
+        <code className={`language-${language}`}>
+          {code}
+        </code>
+      </pre>
+    </div>
   );
 };
 
@@ -466,6 +451,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
       let responseText = "";
       const lowerInstructions = finalInstructions.toLowerCase();
 
+      // Route to the correct agent based on instructions
       if (lowerInstructions.includes("apk")) {
         const result = await apkBuilderAgent({
           projectZipDataUri: currentFileDataUri,
@@ -476,7 +462,6 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
             : `Sorry, I can't convert this project. ${result.guidance}`;
 
       } else if (lowerInstructions.includes("github")) {
-            // Extract repo name from instructions, e.g., "publish to 'my-repo'"
             const repoNameMatch = finalInstructions.match(/['"](.*?)['"]/);
             const repoName = repoNameMatch ? repoNameMatch[1] : `new-project-${Date.now()}`;
 
@@ -488,6 +473,7 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
             responseText = result.message;
       }
       else {
+        // Default to the general file analyzer
         const result = await analyzeUploadedFile({
           fileDataUri: currentFileDataUri,
           fileType: currentFile.type,
@@ -686,28 +672,28 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
                                 <Paperclip className="mr-2 h-4 w-4" />
                                 <span>Add photos & files</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem >
                                 <Github className="mr-2 h-4 w-4" />
                                 <span>Publish to GitHub</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem >
                                 <BookOpen className="mr-2 h-4 w-4" />
                                 <span>Study and learn</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem >
                                 <ImageIcon className="mr-2 h-4 w-4" />
                                 <span>Create image</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem >
                                 <Sparkles className="mr-2 h-4 w-4" />
                                 <span>Think longer</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem >
                                 <FlaskConical className="mr-2 h-4 w-4" />
                                 <span>Deep research</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                             <DropdownMenuItem>
+                             <DropdownMenuItem >
                                 <MoreHorizontal className="mr-2 h-4 w-4" />
                                 <span>More</span>
                             </DropdownMenuItem>
@@ -787,3 +773,5 @@ export function ChatPanel({ conversations, activeConversationId, onNewMessage, o
     </div>
   );
 }
+
+    
